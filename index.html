@@ -62,7 +62,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
  </div>
  <div class="panel">
   <h2>Importer une liste Pronote</h2>
-  <p class="muted">Importe un CSV Pronote : les colonnes Nom, Prénom et Classe sont détectées. Les classes sont créées automatiquement. Pour Excel (.xlsx), exporte d'abord en CSV.</p>
+  <p class="muted">Si le CSV contient une colonne Classe/Division, les élèves sont répartis automatiquement dans les classes correspondantes. Sinon, ils sont ajoutés à la classe choisie ci-dessous. Pour Excel (.xlsx), exporte d'abord en CSV.</p>
   <label>Classe de destination</label><select id="importClass"></select>
   <label style="margin-top:8px">Fichier CSV</label><input id="csvFile" type="file" accept=".csv,text/csv">
   <button class="primary" style="margin-top:9px;width:100%" onclick="importCSV()">Importer les élèves</button>
@@ -130,7 +130,8 @@ function cls(){return db.classes.find(c=>c.id===currentClass)}
 function student(){return cls()?.students.find(s=>s.id===currentStudent)}
 function go(p){page=p;['classes','roster','student','settings'].forEach(x=>document.getElementById(x+'View').classList.toggle('hidden',x!==p));['Classes','Roster','Settings'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='settings'){}}
 function newClass(){let n=prompt('Nom de la classe (ex. 5e A)');if(!n?.trim())return;db.classes.push({id:uid(),name:n.trim(),students:[]});save();renderClasses()}
-function renderClasses(){let el=document.getElementById('classList');el.innerHTML=db.classes.length?'':'<div class="empty">Aucune classe pour le moment.<br>Ajoute une classe pour commencer.</div>';db.classes.forEach(c=>{let d=document.createElement('div');d.className='student';d.innerHTML=`<div class="row between"><div><div class="studentname">${esc(c.name)}</div><div class="muted">${c.students.length} élève(s)</div></div><button class="primary small">Ouvrir</button></div>`;d.querySelector('button').onclick=()=>{currentClass=c.id;go('roster')};el.appendChild(d)});let sel=document.getElementById('importClass');sel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+function deleteClass(id){let c=db.classes.find(x=>x.id===id);if(!c)return;if(!confirm(`Supprimer la classe « ${c.name} » et toutes ses données : ${c.students.length} élève(s), photos, notes, événements et observations ?`))return;if(!confirm(`Confirmer définitivement la suppression de « ${c.name} » ? Pense à faire une sauvegarde avant.`))return;db.classes=db.classes.filter(x=>x.id!==id);if(currentClass===id)currentClass=null;save();renderClasses();alert(`La classe « ${c.name} » a été supprimée.`)}
+function renderClasses(){let el=document.getElementById('classList');el.innerHTML=db.classes.length?'':'<div class="empty">Aucune classe pour le moment.<br>Ajoute une classe pour commencer.</div>';db.classes.forEach(c=>{let d=document.createElement('div');d.className='student';d.innerHTML=`<div class="row between"><div><div class="studentname">${esc(c.name)}</div><div class="muted">${c.students.length} élève(s)</div></div><div class="row"><button class="primary small" data-open>Ouvrir</button><button class="small softred" data-delete>Supprimer</button></div></div>`;d.querySelector('[data-open]').onclick=()=>{currentClass=c.id;go('roster')};d.querySelector('[data-delete]').onclick=()=>deleteClass(c.id);el.appendChild(d)});let sel=document.getElementById('importClass');sel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
 function addStudent(){let n=prompt('Nom et prénom de l’élève');if(!n?.trim())return;cls().students.push({id:uid(),name:n.trim(),events:[],grades:[],sessions:{},notes:[]});save();renderRoster()}
 function eventAdd(s,type,label){s.events.push({id:uid(),type,label,date:document.getElementById('sessionDate').value||new Date().toISOString().slice(0,10),session:Number(document.getElementById('sessionNo').value)});save();renderRoster()}
 function sessionAverage(s){let vals=Object.values(s.sessions||{}).map(x=>({session:Number(x.session),value:Number(x.individual??x.collective),date:x.date||''})).filter(x=>x.session>=1&&x.session<=5&&Number.isFinite(x.value));let latest={};vals.forEach(x=>{if(!latest[x.session]||x.date>=latest[x.session].date)latest[x.session]=x});let a=Object.values(latest);return {avg:a.length?a.reduce((t,x)=>t+x.value,0)/a.length:null,count:a.length,values:latest}}
@@ -163,8 +164,49 @@ function addNote(){let t=document.getElementById('noteText').value.trim();if(!t)
 function copyStudentReport(){let s=student();if(!s)return;let avg=sessionAverage(s),count=t=>s.events.filter(e=>e.type===t).length,grades=s.grades||[],ga=grades.length?grades.reduce((a,g)=>a+Number(g.value||0),0)/grades.length:null;let lines=[`BILAN ÉLÈVE — ${s.name}`,`Classe : ${cls().name}`,`Date du bilan : ${new Date().toLocaleDateString('fr-FR')}`,`Participation : ${avg.avg===null?'non évaluée':avg.avg.toFixed(2).replace('.',',')+'/4 ('+avg.count+'/5 séances)'}`,`Notes : ${grades.length?grades.map(g=>`${g.title}: ${g.value}/20`).join(' ; ')+' | moyenne '+ga.toFixed(2).replace('.',',')+'/20':'aucune'}`,`Présences notées : ${count('Présent')}`,`Absences : ${count('Absence')}`,`Perturbations : ${count('Perturbation')}`,`Cahiers oubliés : ${count('Cahier oublié')}`,`Travaux non faits : ${count('Travail non fait')}`,`Participations positives : ${count('Participation +')}`,`Comportements positifs : ${count('Comportement +')}`,'Observations :',...(s.notes||[]).map(n=>`- ${n.date} : ${n.text}`)];let text=lines.join('\n');if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>alert('Bilan copié. Tu peux le coller dans ton document ou ton logiciel de suivi.')).catch(()=>fallbackCopy(text))}else fallbackCopy(text)}
 function fallbackCopy(text){let t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();try{document.execCommand('copy');alert('Bilan copié.')}catch(e){alert(text)}t.remove()}
 function parseCSV(text,sep){let rows=[],row=[],cell='',q=false;for(let i=0;i<text.length;i++){let ch=text[i];if(ch==='"'){if(q&&text[i+1]==='"'){cell+='"';i++}else q=!q}else if(ch===sep&&!q){row.push(cell.trim());cell=''}else if((ch==='\n'||ch==='\r')&&!q){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell.trim());if(row.some(x=>x!==''))rows.push(row);row=[];cell=''}else cell+=ch}row.push(cell.trim());if(row.some(x=>x!==''))rows.push(row);return rows}
-function importCSV(){let file=document.getElementById('csvFile').files[0];if(!file){alert('Choisis un fichier CSV.');return}let r=new FileReader();r.onload=()=>{let t=String(r.result).replace(/^\uFEFF/,'');let first=t.split(/\r?\n/)[0]||'',sep=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';let rows=parseCSV(t,sep);if(!rows.length)return alert('Fichier vide.');let head=rows[0].map(x=>x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));let ni=head.findIndex(x=>['nom','name'].includes(x)),pi=head.findIndex(x=>['prenom','first name'].includes(x)),ci=head.findIndex(x=>['classe','class','division'].includes(x)),has=ni>=0||pi>=0||ci>=0;if(!has){ni=0;pi=-1;ci=-1}let add=0,created=0,dup=0;rows.slice(has?1:0).forEach(row=>{let n=ni>=0?[row[ni]||'',pi>=0?row[pi]||'':''].filter(Boolean).join(' ').trim():(row[0]||'').trim();if(!n)return;let cn=ci>=0?(row[ci]||'Classe importée').trim():'Classe importée';let c=db.classes.find(x=>x.name.toLowerCase()===cn.toLowerCase());if(!c){c={id:uid(),name:cn,students:[]};db.classes.push(c);created++}if(c.students.some(s=>s.name.toLowerCase()===n.toLowerCase())){dup++;return}c.students.push({id:uid(),name:n,events:[],grades:[],sessions:{},notes:[]});add++});save();document.getElementById('csvFile').value='';renderClasses();alert(`${add} élève(s) importé(s), ${created} classe(s) créée(s), ${dup} doublon(s) ignoré(s).`)};r.readAsText(file,'UTF-8')}
-function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
+function importCSV(){
+ let file=document.getElementById('csvFile').files[0];
+ if(!file){alert('Choisis un fichier CSV.');return}
+ let r=new FileReader();
+ r.onload=()=>{
+  let t=String(r.result).replace(/^\uFEFF/,'');
+  let first=t.split(/\r?\n/)[0]||'';
+  let sep=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?';':',';
+  let rows=parseCSV(t,sep);
+  if(!rows.length){alert('Fichier vide.');return}
+  const norm=x=>String(x||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[._-]/g,' ').replace(/\s+/g,' ');
+  let head=rows[0].map(norm);
+  const find=names=>head.findIndex(x=>names.includes(x));
+  let ni=find(['nom','name','nom de famille','nom eleve','nom de l eleve']);
+  let pi=find(['prenom','first name','prenoms']);
+  let ei=find(['eleve','nom prenom','nom et prenom','identite']);
+  let ci=find(['classe','class','division','groupe','nom de classe','libelle classe','classe eleve']);
+  let hasHeader=ni>=0||pi>=0||ei>=0||ci>=0;
+  if(!hasHeader){ni=0;pi=-1;ei=-1;ci=-1}
+  let selected=document.getElementById('importClass').value;
+  let fallback=db.classes.find(c=>c.id===selected);
+  if(ci<0&&!fallback){alert('Choisis d’abord une classe de destination, ou ajoute une classe.');return}
+  let added=0,created=0,duplicates=0,skipped=0;
+  for(const row of rows.slice(hasHeader?1:0)){
+   let get=i=>i>=0?String(row[i]||'').trim():'';
+   let name=ei>=0?get(ei):[get(ni),get(pi)].filter(Boolean).join(' ').trim();
+   if(!name){skipped++;continue}
+   let className=ci>=0?get(ci):'';
+   let target;
+   if(ci>=0){
+    if(!className){skipped++;continue}
+    target=db.classes.find(c=>norm(c.name)===norm(className));
+    if(!target){target={id:uid(),name:className,students:[]};db.classes.push(target);created++}
+   }else target=fallback;
+   if(target.students.some(s=>norm(s.name)===norm(name))){duplicates++;continue}
+   target.students.push({id:uid(),name,events:[],grades:[],sessions:{},notes:[]});added++;
+  }
+  save();document.getElementById('csvFile').value='';renderClasses();
+  alert(`${added} élève(s) ajouté(s)${ci>=0?' dans les classes indiquées dans le CSV':' dans « '+fallback.name+' »'}. ${created} classe(s) créée(s), ${duplicates} doublon(s) ignoré(s), ${skipped} ligne(s) ignorée(s).`);
+ };
+ r.readAsText(file,'UTF-8');
+}
+function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.3,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
 function restore(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('Choisis un fichier de sauvegarde.');let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.data||!Array.isArray(x.data.classes))throw 0;if(!confirm('Remplacer les données actuelles par cette sauvegarde ?'))return;db=x.data;save();currentClass=null;alert('Sauvegarde restaurée.');go('classes')}catch(e){alert('Fichier de sauvegarde invalide.')}};r.readAsText(f)}
 function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function clearAll(){if(!confirm('Effacer définitivement toutes les classes et données enregistrées sur cet appareil ?'))return;if(!confirm('Dernière confirmation : cette action est irréversible sans sauvegarde.'))return;db={classes:[]};save();go('classes')}

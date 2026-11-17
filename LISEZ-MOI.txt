@@ -1,6 +1,2 @@
-PROFSUIVI SOLO V6
-Trombinoscope : importer une photo de classe ou prendre une photo en classe. Toucher le centre de chaque visage, vérifier/ajuster le cadrage, puis associer manuellement le portrait à un élève.
-Aucune reconnaissance faciale ou identification biométrique. Les portraits compressés sont conservés dans le stockage local du navigateur.
-Import CSV multi-classes : colonnes Nom, Prénom, Classe ; création automatique des classes et dédoublonnage. Exporter un fichier Excel en CSV avant import.
-Mise à jour : remplacer index.html et sw.js dans le dépôt GitHub Pages ; garder manifest et icônes.
-GitHub héberge seulement le code ; photos et données restent locales. localStorage n'est pas un coffre chiffré dédié. Vérifier les consignes de l'établissement/DPO avant photos réelles.
+PROFSUIVI SOLO V6.2
+Ajout : suppression individuelle d’une classe depuis Mes classes, avec double confirmation. La suppression efface les élèves, photos, notes, événements et observations de cette classe. Les autres classes restent intactes. Faire une sauvegarde avant toute suppression.
