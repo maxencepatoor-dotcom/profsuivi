@@ -1,0 +1,21 @@
+PROFSUIVI SOLO — VERSION 4
+
+Contenu :
+- index.html : application
+- manifest.webmanifest : configuration d'installation
+- sw.js : cache hors ligne
+- icon-192.png / icon-512.png : icônes
+
+Installation :
+1. Héberger ces fichiers sur un hébergement statique HTTPS (le serveur ne reçoit que les fichiers de l'application).
+2. Ouvrir l'adresse HTTPS dans Safari sur l'iPhone.
+3. Partager > Sur l'écran d'accueil > Ajouter.
+4. Ouvrir une première fois l'application en ligne pour mettre en cache les fichiers.
+5. Les données de classe sont enregistrées dans localStorage sur cet appareil et ne sont pas envoyées à l'hébergement.
+
+Important :
+- Les données ne sont pas chiffrées par l'application. Le code de verrouillage iPhone protège l'accès à l'appareil, mais ne remplace pas une validation de sécurité.
+- Ne pas saisir de vraies données d'élèves avant validation par l'établissement / DPO.
+- Exporter régulièrement une sauvegarde JSON et la conserver dans un emplacement local sécurisé (par exemple « Sur mon iPhone », pas iCloud Drive si l'objectif est d'éviter le cloud).
+- L'import proposé est CSV ; exporter le fichier Pronote en CSV.
+- Prototype fonctionnel à tester avec des données fictives.

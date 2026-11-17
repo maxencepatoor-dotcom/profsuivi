@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172554">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ProfSuivi">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ProfSuivi Solo</title>
+<style>
+:root{--navy:#172554;--blue:#2563eb;--bg:#f3f6fb;--ink:#172033;--muted:#64748b;--line:#e2e8f0;--green:#15803d;--red:#b91c1c;--amber:#b45309}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{background:var(--navy);color:white;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:5}
+.headrow{display:flex;justify-content:space-between;align-items:center;gap:12px}h1{font-size:21px;margin:0}header small{opacity:.8}
+main{max-width:850px;margin:auto;padding:14px}
+.panel{background:white;border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px #0f172a08}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+label{font-size:13px;color:var(--muted);display:block;margin:0 0 5px}
+input,select,textarea{font:inherit;width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:11px;background:white;color:var(--ink);min-width:0}
+textarea{min-height:78px;resize:vertical}
+button{font:inherit;border:0;border-radius:11px;padding:11px 13px;background:#e8eefb;color:#17336e;font-weight:650;cursor:pointer}
+button.primary{background:var(--blue);color:white}button.dark{background:var(--navy);color:white}button.softred{background:#fee2e2;color:#991b1b}button.softgreen{background:#dcfce7;color:#166534}button.small{font-size:13px;padding:8px 10px}button:active{transform:scale(.98)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.field{flex:1;min-width:130px}
+.tabs{display:flex;gap:6px;overflow:auto;padding:0 0 10px}.tab{white-space:nowrap;background:#e2e8f0;color:#334155}.tab.active{background:var(--navy);color:white}
+.student{border:1px solid var(--line);border-radius:14px;padding:12px;margin:9px 0;background:#fff}
+.studenttop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}.studentname{font-weight:750}
+.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.actions button{font-size:12px;padding:9px 4px;min-height:43px}
+.muted{color:var(--muted);font-size:13px}.pill{border-radius:30px;background:#eef2ff;color:#3730a3;padding:4px 8px;font-size:12px}
+.stat{font-size:22px;font-weight:800}.hidden{display:none!important}
+.bottom{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:8}
+.bottominner{display:flex;gap:5px;max-width:850px;width:100%}.bottom button{flex:1;padding:10px 4px;font-size:12px;background:transparent;color:#475569}.bottom button.active{background:#e8eefb;color:#1d4ed8}
+h2{font-size:17px;margin:0 0 10px}h3{font-size:15px;margin:0 0 7px}
+.notice{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:11px;font-size:13px;color:#854d0e}
+.empty{text-align:center;padding:25px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;border-bottom:1px solid var(--line);text-align:left}
+@media(min-width:650px){.actions{grid-template-columns:repeat(6,minmax(0,1fr))}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<main>
+<section id="classesView">
+ <div class="panel">
+  <div class="row between"><h2>Mes classes</h2><button class="primary small" onclick="newClass()">+ Ajouter</button></div>
+  <div id="classList"></div>
+ </div>
+ <div class="panel">
+  <h2>Importer une liste Pronote</h2>
+  <p class="muted">Choisis un fichier CSV exporté depuis Pronote. Les colonnes « Nom » et « Prénom » sont reconnues si présentes ; sinon la première colonne sera utilisée.</p>
+  <label>Classe de destination</label><select id="importClass"></select>
+  <label style="margin-top:8px">Fichier CSV</label><input id="csvFile" type="file" accept=".csv,text/csv">
+  <button class="primary" style="margin-top:9px;width:100%" onclick="importCSV()">Importer les élèves</button>
+ </div>
+</section>
+
+<section id="rosterView" class="hidden">
+ <div class="row between" style="margin-bottom:10px"><button class="small" onclick="go('classes')">← Classes</button><span class="pill" id="rosterClassName"></span></div>
+ <div class="panel">
+  <div class="row between"><h2>Suivi de la séance</h2><span class="muted" id="sessionLabel"></span></div>
+  <div class="grid">
+   <div><label>Date</label><input type="date" id="sessionDate"></div>
+   <div><label>Séance</label><select id="sessionNo"><option value="1">Séance 1</option><option value="2">Séance 2</option><option value="3">Séance 3</option><option value="4">Séance 4</option><option value="5">Séance 5</option></select></div>
+  </div>
+  <div class="row" style="margin-top:10px"><button class="small" onclick="setAllPresent()">Tous présents</button><button class="small" onclick="classParticipation()">Note collective /4</button><button class="small" onclick="addStudent()">+ Élève</button></div>
+ </div>
+ <div id="studentList"></div>
+</section>
+
+<section id="studentView" class="hidden">
+ <div class="row between" style="margin-bottom:10px"><button class="small" onclick="go('roster')">← Classe</button><span class="pill">Fiche élève</span></div>
+ <div id="studentDetail"></div>
+</section>
+
+<section id="settingsView" class="hidden">
+ <div class="panel"><h2>Données et sauvegardes</h2>
+  <p class="muted">Les données sont enregistrées dans le stockage du navigateur sur cet iPhone. Elles ne sont pas envoyées au site qui héberge les fichiers de l'application.</p>
+  <button class="primary" style="width:100%;margin:6px 0" onclick="backup()">Exporter une sauvegarde JSON</button>
+  <label>Restaurer une sauvegarde</label><input type="file" id="restoreFile" accept=".json,application/json">
+  <button style="width:100%;margin-top:8px" onclick="restore()">Restaurer</button>
+  <button class="softred" style="width:100%;margin-top:18px" onclick="clearAll()">Effacer toutes les données de cet appareil</button>
+ </div>
+ <div class="notice">Conseil : protège ton iPhone par un code robuste et active le verrouillage automatique. N'utilise que les informations nécessaires au suivi pédagogique et vérifie les consignes de ton établissement avant toute saisie de données réelles.</div>
+ <div class="panel"><h2>Installation sur l'écran d'accueil</h2><ol class="muted"><li>Ouvre l'adresse sécurisée de l'application dans Safari.</li><li>Touche le bouton Partager.</li><li>Choisis « Sur l'écran d'accueil » puis « Ajouter ».</li><li>Ouvre ProfSuivi depuis sa nouvelle icône. Après le premier chargement, l'application peut fonctionner hors ligne.</li></ol></div>
+</section>
+</main>
+<nav class="bottom"><div class="bottominner">
+<button id="navClasses" class="active" onclick="go('classes')">Classes</button>
+<button id="navRoster" onclick="go('roster')">Élèves</button>
+<button id="navSettings" onclick="go('settings')">Sauvegarde</button>
+</div></nav>
+<script>
+const KEY='profsuivi_solo_v4';
+let db=load(), currentClass=null, currentStudent=null, page='classes';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{classes:[]}}catch(e){return {classes:[]}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function cls(){return db.classes.find(c=>c.id===currentClass)}
+function student(){return cls()?.students.find(s=>s.id===currentStudent)}
+function go(p){page=p;['classes','roster','student','settings'].forEach(x=>document.getElementById(x+'View').classList.toggle('hidden',x!==p));['Classes','Roster','Settings'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='settings'){}}
+function newClass(){let n=prompt('Nom de la classe (ex. 5e A)');if(!n?.trim())return;db.classes.push({id:uid(),name:n.trim(),students:[]});save();renderClasses()}
+function renderClasses(){let el=document.getElementById('classList');el.innerHTML=db.classes.length?'':'<div class="empty">Aucune classe pour le moment.<br>Ajoute une classe pour commencer.</div>';db.classes.forEach(c=>{let d=document.createElement('div');d.className='student';d.innerHTML=`<div class="row between"><div><div class="studentname">${esc(c.name)}</div><div class="muted">${c.students.length} élève(s)</div></div><button class="primary small">Ouvrir</button></div>`;d.querySelector('button').onclick=()=>{currentClass=c.id;go('roster')};el.appendChild(d)});let sel=document.getElementById('importClass');sel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+function addStudent(){let n=prompt('Nom et prénom de l’élève');if(!n?.trim())return;cls().students.push({id:uid(),name:n.trim(),events:[],grades:[],sessions:{},notes:[]});save();renderRoster()}
+function eventAdd(s,type,label){s.events.push({id:uid(),type,label,date:document.getElementById('sessionDate').value||new Date().toISOString().slice(0,10),session:Number(document.getElementById('sessionNo').value)});save();renderRoster()}
+function renderRoster(){let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';if(!c.students.length){list.innerHTML='<div class="panel empty">Aucun élève. Ajoute-les manuellement ou importe un CSV Pronote.</div>';return}
+ c.students.sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(s=>{let count=s.events.length;let card=document.createElement('div');card.className='student';card.innerHTML=`<div class="studenttop"><div><div class="studentname">${esc(s.name)}</div><div class="muted">${count} événement(s) enregistré(s)</div></div><button class="small">Fiche →</button></div><div class="actions"><button class="softgreen" data-t="Participation +">Participation +</button><button class="softgreen" data-t="Comportement +">Comportement +</button><button class="softred" data-t="Perturbation">Perturbation</button><button data-t="Cahier oublié">Cahier oublié</button><button data-t="Travail non fait">Travail non fait</button><button data-t="Absence">Absence</button></div>`;card.querySelector('.studenttop button').onclick=()=>{currentStudent=s.id;go('student')};card.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>eventAdd(s,b.dataset.t,b.dataset.t));list.appendChild(card)})}
+function setAllPresent(){let c=cls();c.students.forEach(s=>{let exists=s.events.some(e=>e.type==='Présent'&&e.date===document.getElementById('sessionDate').value&&e.session===Number(document.getElementById('sessionNo').value));if(!exists)s.events.push({id:uid(),type:'Présent',label:'Présent',date:document.getElementById('sessionDate').value,session:Number(document.getElementById('sessionNo').value)})});save();renderRoster()}
+function classParticipation(){let v=prompt('Note collective de participation pour cette séance (sur 4)');if(v===null)return;let n=Number(v);if(!Number.isFinite(n)||n<0||n>4){alert('Entre une note de 0 à 4.');return}let c=cls(),date=document.getElementById('sessionDate').value,no=Number(document.getElementById('sessionNo').value);c.students.forEach(s=>{s.sessions[date+'_'+no]={date,session:no,collective:n,individual:null}});save();alert('Note collective enregistrée. Tu peux modifier chaque élève dans sa fiche.')}
+function renderStudent(){let s=student(),c=cls();if(!s){go('roster');return}let ev=[...s.events].reverse();document.getElementById('studentDetail').innerHTML=`<div class="panel"><h2>${esc(s.name)}</h2><div class="row"><button class="small" onclick="renameStudent()">Renommer</button><button class="small softred" onclick="deleteStudent()">Supprimer</button></div></div><div class="panel"><h2>Participation par séance</h2><div id="sessions"></div></div><div class="panel"><h2>Ajouter une note</h2><div class="grid"><div><label>Note</label><input id="gradeValue" type="number" min="0" max="20" step="0.25" placeholder="ex. 15"></div><div><label>Évaluation</label><input id="gradeTitle" placeholder="Titre"></div></div><button class="primary" style="margin-top:8px;width:100%" onclick="addGrade()">Enregistrer la note</button><div id="grades"></div></div><div class="panel"><h2>Investissement / observation</h2><textarea id="noteText" placeholder="Projet, investissement, observation..."></textarea><button class="primary" style="margin-top:8px;width:100%" onclick="addNote()">Ajouter l'observation</button><div id="notes"></div></div><div class="panel"><h2>Historique récent</h2>${ev.length?ev.slice(0,30).map(e=>`<div class="row between" style="padding:7px 0;border-bottom:1px solid var(--line)"><span>${esc(e.label||e.type)}</span><span class="muted">${esc(e.date||'')}</span></div>`).join(''):'<p class="muted">Aucun événement.</p>'}</div>`;
+ let sessions=document.getElementById('sessions');let arr=Object.values(s.sessions||{}).sort((a,b)=>(b.date||'').localeCompare(a.date||''));sessions.innerHTML=arr.length?arr.map((x,i)=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(x.date)} · séance ${x.session}</span><span><b>${x.individual??x.collective}/4</b> <button class="small" onclick="editSession('${esc(x.date)}',${x.session})">Ajuster</button></span></div>`).join(''):'<p class="muted">Aucune note de participation.</p>';
+ document.getElementById('grades').innerHTML=(s.grades||[]).map(g=>`<div class="row between" style="padding:7px 0"><span>${esc(g.title)}</span><b>${g.value}/20</b></div>`).join('');
+ document.getElementById('notes').innerHTML=(s.notes||[]).slice().reverse().map(n=>`<p class="muted">${esc(n.date)} · ${esc(n.text)}</p>`).join('');
+}
+function editSession(date,no){let s=student(),key=date+'_'+no,x=s.sessions[key];let v=prompt('Note individuelle sur 4 (laisser vide pour revenir à la note collective)',x.individual??x.collective);if(v===null)return;x.individual=v.trim()===''?null:Number(v);if(x.individual!==null&&(x.individual<0||x.individual>4||!Number.isFinite(x.individual))){alert('Note entre 0 et 4');return}save();renderStudent()}
+function renameStudent(){let s=student(),n=prompt('Nouveau nom',s.name);if(n?.trim()){s.name=n.trim();save();renderStudent()}}
+function deleteStudent(){if(!confirm('Supprimer cet élève et son historique ?'))return;cls().students=cls().students.filter(x=>x.id!==currentStudent);save();go('roster')}
+function addGrade(){let s=student(),v=Number(document.getElementById('gradeValue').value),t=document.getElementById('gradeTitle').value.trim()||'Évaluation';if(!Number.isFinite(v)||v<0||v>20){alert('Note entre 0 et 20');return}s.grades.push({value:v,title:t,date:new Date().toISOString().slice(0,10)});save();renderStudent()}
+function addNote(){let t=document.getElementById('noteText').value.trim();if(!t)return;student().notes.push({text:t,date:new Date().toISOString().slice(0,10)});save();renderStudent()}
+function importCSV(){let file=document.getElementById('csvFile').files[0],id=document.getElementById('importClass').value;if(!file||!id){alert('Choisis une classe et un fichier CSV.');return}let reader=new FileReader();reader.onload=()=>{let txt=String(reader.result).replace(/^\uFEFF/,'');let lines=txt.split(/\r?\n/).filter(x=>x.trim());if(!lines.length)return;let sep=(lines[0].match(/;/g)||[]).length> (lines[0].match(/,/g)||[]).length?';':',';let rows=lines.map(l=>l.split(sep).map(x=>x.trim().replace(/^"|"$/g,'').replace(/""/g,'"')));let head=rows[0].map(x=>x.toLowerCase());let ni=head.findIndex(x=>/^(nom|name)$/.test(x)),pi=head.findIndex(x=>/^(prénom|prenom|first name)$/.test(x));let start=(ni>=0||pi>=0)?1:0;let c=db.classes.find(x=>x.id===id),added=0;rows.slice(start).forEach(r=>{let name=ni>=0?[r[ni],pi>=0?r[pi]:''].filter(Boolean).join(' '):r[0];if(name?.trim()&&!c.students.some(s=>s.name.toLowerCase()===name.trim().toLowerCase())){c.students.push({id:uid(),name:name.trim(),events:[],grades:[],sessions:{},notes:[]});added++}});save();alert(added+' élève(s) importé(s).');document.getElementById('csvFile').value='';renderClasses()};reader.readAsText(file,'UTF-8')}
+function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:4,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
+function restore(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('Choisis un fichier de sauvegarde.');let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.data||!Array.isArray(x.data.classes))throw 0;if(!confirm('Remplacer les données actuelles par cette sauvegarde ?'))return;db=x.data;save();currentClass=null;alert('Sauvegarde restaurée.');go('classes')}catch(e){alert('Fichier de sauvegarde invalide.')}};r.readAsText(f)}
+function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function clearAll(){if(!confirm('Effacer définitivement toutes les classes et données enregistrées sur cet appareil ?'))return;if(!confirm('Dernière confirmation : cette action est irréversible sans sauvegarde.'))return;db={classes:[]};save();go('classes')}
+document.getElementById('sessionNo').addEventListener('change',()=>{document.getElementById('sessionLabel').textContent='Séance '+document.getElementById('sessionNo').value});
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+renderClasses();go('classes');
+</script>
+</body></html>
