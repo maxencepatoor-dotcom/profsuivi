@@ -1,7 +1,6 @@
-ProfSuivi Solo V6.5
-Mise à jour depuis V6.4.
-Sur GitHub Pages, remplacer uniquement index.html et sw.js.
-Conserver manifest.webmanifest et les icônes existantes.
-Faire une sauvegarde JSON des données avant toute mise à jour.
-Les données et photos des élèves restent dans le stockage local du navigateur sur l'iPhone.
-Le module Pronote accepte les exports CSV structurés avec une ligne d'intitulés « Moyenne » et une ligne de dates au-dessus. Vérifier l'aperçu avant de confirmer l'import.
+ProfSuivi Solo V6.6
+Remplacez uniquement index.html et sw.js sur GitHub Pages. Conservez manifest et icônes.
+Sauvegardez les données JSON avant mise à jour.
+Ajouts : module de trombinoscope automatique (détection des aplats verts + OCR français) et préparation/édition des appréciations de bulletin avec export PDF par classe ou par élève.
+OCR : Tesseract.js est chargé depuis jsDelivr lors de la première utilisation. La photo est traitée localement dans le navigateur et n'est pas envoyée au CDN. Une connexion Internet est nécessaire pour charger le moteur OCR la première fois.
+Les résultats de détection doivent être vérifiés avant validation. La détection est optimisée pour les planches Pronote à photos sur fond vert ; elle peut demander une correction sur les fonds différents ou les photos manquantes.
