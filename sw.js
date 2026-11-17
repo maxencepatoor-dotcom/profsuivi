@@ -1,4 +1,4 @@
-const CACHE='profsuivi-solo-v5';
+const CACHE='profsuivi-solo-v6';
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(CACHE);await c.addAll(FILES);await self.skipWaiting()})()));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('profsuivi-solo-')&&k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim()})()));
