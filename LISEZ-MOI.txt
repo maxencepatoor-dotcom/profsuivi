@@ -1,2 +1,7 @@
-PROFSUIVI SOLO V6.2
-Ajout : suppression individuelle d’une classe depuis Mes classes, avec double confirmation. La suppression efface les élèves, photos, notes, événements et observations de cette classe. Les autres classes restent intactes. Faire une sauvegarde avant toute suppression.
+ProfSuivi Solo V6.5
+Mise à jour depuis V6.4.
+Sur GitHub Pages, remplacer uniquement index.html et sw.js.
+Conserver manifest.webmanifest et les icônes existantes.
+Faire une sauvegarde JSON des données avant toute mise à jour.
+Les données et photos des élèves restent dans le stockage local du navigateur sur l'iPhone.
+Le module Pronote accepte les exports CSV structurés avec une ligne d'intitulés « Moyenne » et une ligne de dates au-dessus. Vérifier l'aperçu avant de confirmer l'import.

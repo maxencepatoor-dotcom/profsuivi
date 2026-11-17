@@ -50,6 +50,23 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 .portrait img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}.portrait b{display:block;font-size:12px;margin-top:4px;overflow-wrap:anywhere}
 .studentavatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#e2e8f0}.crop-preview{width:88px;height:88px;object-fit:cover;border-radius:10px}
 @media(min-width:650px){.portrait-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+
+/* Gestion des classes V6.4 */
+.class-toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;margin:12px 0}
+.class-search{grid-column:1/-1}
+.class-card{border:1px solid var(--line);border-radius:15px;background:#fff;padding:13px;margin:9px 0}
+.class-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.class-card-title{font-size:17px;font-weight:800;overflow-wrap:anywhere}
+.class-metrics{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.class-metric{background:#f1f5f9;border-radius:9px;padding:6px 9px;font-size:12px;color:#475569}
+.class-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.class-actions button{width:100%}
+.class-add-form{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:10px}
+.class-add-form input{min-width:0}
+.import-details{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+.import-details summary{font-weight:750;cursor:pointer;padding:5px 0}
+.class-empty{padding:20px;text-align:center;color:var(--muted)}
+@media(min-width:650px){.class-toolbar{grid-template-columns:2fr 1fr auto}.class-search{grid-column:auto}.class-actions{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
@@ -57,15 +74,21 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 <main>
 <section id="classesView">
  <div class="panel">
-  <div class="row between"><h2>Mes classes</h2><button class="primary small" onclick="newClass()">+ Ajouter</button></div>
+  <div class="row between"><div><h2>Mes classes</h2><div class="muted" id="classSummary"></div></div><button class="primary small" onclick="toggleAddClass()">+ Ajouter</button></div>
+  <div id="addClassForm" class="class-add-form hidden"><input id="newClassName" placeholder="Ex. 5e A" maxlength="40"><button class="primary" onclick="createClassFromForm()">Créer</button></div>
+  <div class="class-toolbar">
+   <input id="classSearch" class="class-search" placeholder="Rechercher une classe…" oninput="renderClasses()">
+   <select id="classSort" aria-label="Trier les classes" onchange="renderClasses()"><option value="name">Ordre alphabétique</option><option value="count">Plus d'élèves</option><option value="recent">Dernière créée</option></select>
+   <button class="small" onclick="clearClassSearch()">Réinitialiser</button>
+  </div>
   <div id="classList"></div>
- </div>
- <div class="panel">
-  <h2>Importer une liste Pronote</h2>
-  <p class="muted">Si le CSV contient une colonne Classe/Division, les élèves sont répartis automatiquement dans les classes correspondantes. Sinon, ils sont ajoutés à la classe choisie ci-dessous. Pour Excel (.xlsx), exporte d'abord en CSV.</p>
-  <label>Classe de destination</label><select id="importClass"></select>
-  <label style="margin-top:8px">Fichier CSV</label><input id="csvFile" type="file" accept=".csv,text/csv">
-  <button class="primary" style="margin-top:9px;width:100%" onclick="importCSV()">Importer les élèves</button>
+  <details class="import-details">
+   <summary>Importer une liste Pronote (CSV)</summary>
+   <p class="muted">Si ton fichier contient une colonne Classe/Division, les élèves seront répartis dans les classes correspondantes. Sinon, ils seront ajoutés à la classe choisie. Pour Excel (.xlsx), exporte d'abord en CSV.</p>
+   <label>Classe de destination si aucune colonne Classe n'existe</label><select id="importClass"></select>
+   <label style="margin-top:8px">Fichier CSV</label><input id="csvFile" type="file" accept=".csv,text/csv">
+   <button class="primary" style="margin-top:9px;width:100%" onclick="importCSV()">Importer les élèves</button>
+  </details>
  </div>
 </section>
 
@@ -93,6 +116,15 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
    <button class="primary" style="width:100%;margin-top:8px" onclick="savePortrait()">Enregistrer le portrait</button>
   </div>
   <div class="row between" style="margin-top:12px"><b>Portraits associés</b><span class="muted" id="portraitCount"></span></div><div id="portraitGrid" class="portrait-grid"></div>
+ </div>
+
+ <div class="panel">
+  <h2>Importer les notes Pronote</h2>
+  <p class="muted">Importe un export CSV de notes. Les élèves sont rapprochés de la liste de cette classe. Tu vérifies les correspondances avant d'enregistrer.</p>
+  <label>Fichier de notes Pronote (.csv)</label>
+  <input id="pronoteGradesFile" type="file" accept=".csv,text/csv">
+  <button class="primary" style="width:100%;margin-top:9px" onclick="previewPronoteGrades()">Analyser le fichier</button>
+  <div id="pronoteImportPreview" style="margin-top:10px"></div>
  </div>
  <div id="studentList"></div>
 </section>
@@ -129,9 +161,34 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function cls(){return db.classes.find(c=>c.id===currentClass)}
 function student(){return cls()?.students.find(s=>s.id===currentStudent)}
 function go(p){page=p;['classes','roster','student','settings'].forEach(x=>document.getElementById(x+'View').classList.toggle('hidden',x!==p));['Classes','Roster','Settings'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='settings'){}}
-function newClass(){let n=prompt('Nom de la classe (ex. 5e A)');if(!n?.trim())return;db.classes.push({id:uid(),name:n.trim(),students:[]});save();renderClasses()}
+function toggleAddClass(){let f=document.getElementById('addClassForm');f.classList.toggle('hidden');if(!f.classList.contains('hidden'))document.getElementById('newClassName').focus()}
+function createClassFromForm(){let input=document.getElementById('newClassName'),n=input.value.trim();if(!n)return alert('Saisis le nom de la classe.');if(db.classes.some(c=>c.name.toLowerCase()===n.toLowerCase()))return alert('Cette classe existe déjà.');db.classes.push({id:uid(),name:n,students:[]});save();input.value='';document.getElementById('addClassForm').classList.add('hidden');renderClasses()}
+function newClass(){toggleAddClass()}
+function renameClass(id){let c=db.classes.find(x=>x.id===id);if(!c)return;let n=prompt('Nouveau nom de la classe :',c.name);if(!n?.trim())return;if(db.classes.some(x=>x.id!==id&&x.name.toLowerCase()===n.trim().toLowerCase()))return alert('Une classe porte déjà ce nom.');c.name=n.trim();save();renderClasses()}
+function clearClassSearch(){document.getElementById('classSearch').value='';renderClasses()}
 function deleteClass(id){let c=db.classes.find(x=>x.id===id);if(!c)return;if(!confirm(`Supprimer la classe « ${c.name} » et toutes ses données : ${c.students.length} élève(s), photos, notes, événements et observations ?`))return;if(!confirm(`Confirmer définitivement la suppression de « ${c.name} » ? Pense à faire une sauvegarde avant.`))return;db.classes=db.classes.filter(x=>x.id!==id);if(currentClass===id)currentClass=null;save();renderClasses();alert(`La classe « ${c.name} » a été supprimée.`)}
-function renderClasses(){let el=document.getElementById('classList');el.innerHTML=db.classes.length?'':'<div class="empty">Aucune classe pour le moment.<br>Ajoute une classe pour commencer.</div>';db.classes.forEach(c=>{let d=document.createElement('div');d.className='student';d.innerHTML=`<div class="row between"><div><div class="studentname">${esc(c.name)}</div><div class="muted">${c.students.length} élève(s)</div></div><div class="row"><button class="primary small" data-open>Ouvrir</button><button class="small softred" data-delete>Supprimer</button></div></div>`;d.querySelector('[data-open]').onclick=()=>{currentClass=c.id;go('roster')};d.querySelector('[data-delete]').onclick=()=>deleteClass(c.id);el.appendChild(d)});let sel=document.getElementById('importClass');sel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+function renderClasses(){
+ const el=document.getElementById('classList'),q=(document.getElementById('classSearch')?.value||'').trim().toLowerCase(),sort=document.getElementById('classSort')?.value||'name';
+ let arr=db.classes.filter(c=>c.name.toLowerCase().includes(q));
+ if(sort==='count')arr.sort((a,b)=>b.students.length-a.students.length||a.name.localeCompare(b.name,'fr'));
+ else if(sort==='recent')arr=arr.slice().reverse();
+ else arr.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+ const total=db.classes.length,students=db.classes.reduce((n,c)=>n+c.students.length,0);
+ document.getElementById('classSummary').textContent=`${total} classe(s) · ${students} élève(s) au total`;
+ el.innerHTML=arr.length?'':'<div class="class-empty">'+(q?'Aucune classe ne correspond à cette recherche.':'Aucune classe pour le moment. Ajoute ta première classe.')+'</div>';
+ arr.forEach(c=>{
+  let portraits=c.students.filter(s=>s.photo).length;
+  let d=document.createElement('div');d.className='class-card';
+  d.innerHTML=`<div class="class-card-head"><div><div class="class-card-title">${esc(c.name)}</div><div class="muted">${c.students.length} élève(s)</div></div><span class="pill">${portraits} photo(s)</span></div>
+  <div class="class-metrics"><span class="class-metric">👥 ${c.students.length} élèves</span><span class="class-metric">📷 ${portraits} portraits</span></div>
+  <div class="class-actions"><button class="primary" data-open>Ouvrir la classe</button><button data-rename>Renommer</button><button class="softred" data-delete>Supprimer</button></div>`;
+  d.querySelector('[data-open]').onclick=()=>{currentClass=c.id;go('roster')};
+  d.querySelector('[data-rename]').onclick=()=>renameClass(c.id);
+  d.querySelector('[data-delete]').onclick=()=>deleteClass(c.id);
+  el.appendChild(d)
+ });
+ let sel=document.getElementById('importClass'),prev=sel.value;sel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(db.classes.some(c=>c.id===prev))sel.value=prev;
+}
 function addStudent(){let n=prompt('Nom et prénom de l’élève');if(!n?.trim())return;cls().students.push({id:uid(),name:n.trim(),events:[],grades:[],sessions:{},notes:[]});save();renderRoster()}
 function eventAdd(s,type,label){s.events.push({id:uid(),type,label,date:document.getElementById('sessionDate').value||new Date().toISOString().slice(0,10),session:Number(document.getElementById('sessionNo').value)});save();renderRoster()}
 function sessionAverage(s){let vals=Object.values(s.sessions||{}).map(x=>({session:Number(x.session),value:Number(x.individual??x.collective),date:x.date||''})).filter(x=>x.session>=1&&x.session<=5&&Number.isFinite(x.value));let latest={};vals.forEach(x=>{if(!latest[x.session]||x.date>=latest[x.session].date)latest[x.session]=x});let a=Object.values(latest);return {avg:a.length?a.reduce((t,x)=>t+x.value,0)/a.length:null,count:a.length,values:latest}}
@@ -152,9 +209,9 @@ function setAllPresent(){let c=cls();c.students.forEach(s=>{let exists=s.events.
 function classParticipation(){let v=prompt('Note collective de participation pour cette séance (sur 4)');if(v===null)return;let n=Number(v);if(!Number.isFinite(n)||n<0||n>4){alert('Entre une note de 0 à 4.');return}let c=cls(),date=document.getElementById('sessionDate').value,no=Number(document.getElementById('sessionNo').value);c.students.forEach(s=>{s.sessions[date+'_'+no]={date,session:no,collective:n,individual:null}});save();alert('Note collective enregistrée. Tu peux modifier chaque élève dans sa fiche.')}
 function renderStudent(){let s=student(),c=cls();if(!s){go('roster');return}let ev=[...s.events].reverse();document.getElementById('studentDetail').innerHTML=`<div class="panel"><div class="row">${s.photo?`<img src="${s.photo}" class="studentavatar" style="width:60px;height:60px" alt="">`:``}<h2>${esc(s.name)}</h2></div><div class="row"><button class="small" onclick="renameStudent()">Renommer</button><button class="small softred" onclick="deleteStudent()">Supprimer</button></div></div><div class="panel"><h2>Participation par séance</h2><div id="sessions"></div></div><div class="panel"><h2>Ajouter une note</h2><div class="grid"><div><label>Note</label><input id="gradeValue" type="number" min="0" max="20" step="0.25" placeholder="ex. 15"></div><div><label>Évaluation</label><input id="gradeTitle" placeholder="Titre"></div></div><button class="primary" style="margin-top:8px;width:100%" onclick="addGrade()">Enregistrer la note</button><div id="grades"></div></div><div class="panel"><h2>Investissement / observation</h2><textarea id="noteText" placeholder="Projet, investissement, observation..."></textarea><button class="primary" style="margin-top:8px;width:100%" onclick="addNote()">Ajouter l'observation</button><div id="notes"></div></div><div class="panel"><h2>Bilan individuel</h2><div id="studentSummary"></div><button class="primary" style="width:100%;margin-top:9px" onclick="copyStudentReport()">Copier le bilan</button></div><div class="panel"><h2>Historique récent</h2>${ev.length?ev.slice(0,30).map(e=>`<div class="row between" style="padding:7px 0;border-bottom:1px solid var(--line)"><span>${esc(e.label||e.type)}</span><span class="muted">${esc(e.date||'')}</span></div>`).join(''):'<p class="muted">Aucun événement.</p>'}</div>`;
  let sessions=document.getElementById('sessions');let arr=Object.values(s.sessions||{}).sort((a,b)=>(b.date||'').localeCompare(a.date||''));sessions.innerHTML=arr.length?arr.map((x,i)=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(x.date)} · séance ${x.session}</span><span><b>${x.individual??x.collective}/4</b> <button class="small" onclick="editSession('${esc(x.date)}',${x.session})">Ajuster</button></span></div>`).join(''):'<p class="muted">Aucune note de participation.</p>';
- document.getElementById('grades').innerHTML=(s.grades||[]).map(g=>`<div class="row between" style="padding:7px 0"><span>${esc(g.title)}</span><b>${g.value}/20</b></div>`).join('');
+ document.getElementById('grades').innerHTML=(s.grades||[]).map(g=>`<div class="row between" style="padding:7px 0"><span>${esc(g.title)}${g.source==='Pronote'?' · Pronote':''}</span><b>${g.status?esc(g.status):g.value+'/20'}</b></div>`).join('');
  document.getElementById('notes').innerHTML=(s.notes||[]).slice().reverse().map(n=>`<p class="muted">${esc(n.date)} · ${esc(n.text)}</p>`).join('');
- let evCount=(type)=>s.events.filter(e=>e.type===type).length;let avg=sessionAverage(s);let grades=s.grades||[];let gradeAvg=grades.length?grades.reduce((a,g)=>a+Number(g.value||0),0)/grades.length:null;let summary=`Participation : ${avg.avg===null?'non évaluée':avg.avg.toFixed(2).replace('.',',')+' / 4 ('+avg.count+'/5 séances renseignées)'}\nNotes : ${grades.length?grades.length+' note(s), moyenne '+gradeAvg.toFixed(2).replace('.',',')+'/20':'aucune note'}\nPrésences : ${evCount('Présent')} · Absences : ${evCount('Absence')}\nPerturbations : ${evCount('Perturbation')} · Cahiers oubliés : ${evCount('Cahier oublié')}\nTravaux non faits : ${evCount('Travail non fait')}\nParticipations positives : ${evCount('Participation +')} · Comportements positifs : ${evCount('Comportement +')}\nObservations / investissement : ${(s.notes||[]).length} observation(s)`;document.getElementById('studentSummary').innerHTML=`<div class="reporttext">${esc(summary)}</div>`;
+ let evCount=(type)=>s.events.filter(e=>e.type===type).length;let avg=sessionAverage(s);let grades=(s.grades||[]).filter(g=>Number.isFinite(Number(g.value))&&g.value!==null&&g.value!=='');let gradeAvg=grades.length?grades.reduce((a,g)=>a+Number(g.value),0)/grades.length:null;let summary=`Participation : ${avg.avg===null?'non évaluée':avg.avg.toFixed(2).replace('.',',')+' / 4 ('+avg.count+'/5 séances renseignées)'}\nNotes : ${grades.length?grades.length+' note(s), moyenne '+gradeAvg.toFixed(2).replace('.',',')+'/20':'aucune note'}\nPrésences : ${evCount('Présent')} · Absences : ${evCount('Absence')}\nPerturbations : ${evCount('Perturbation')} · Cahiers oubliés : ${evCount('Cahier oublié')}\nTravaux non faits : ${evCount('Travail non fait')}\nParticipations positives : ${evCount('Participation +')} · Comportements positifs : ${evCount('Comportement +')}\nObservations / investissement : ${(s.notes||[]).length} observation(s)`;document.getElementById('studentSummary').innerHTML=`<div class="reporttext">${esc(summary)}</div>`;
 }
 function editSession(date,no){let s=student(),key=date+'_'+no,x=s.sessions[key];let v=prompt('Note individuelle sur 4 (laisser vide pour revenir à la note collective)',x.individual??x.collective);if(v===null)return;x.individual=v.trim()===''?null:Number(v);if(x.individual!==null&&(x.individual<0||x.individual>4||!Number.isFinite(x.individual))){alert('Note entre 0 et 4');return}save();renderStudent()}
 function renameStudent(){let s=student(),n=prompt('Nouveau nom',s.name);if(n?.trim()){s.name=n.trim();save();renderStudent()}}
@@ -206,7 +263,107 @@ function importCSV(){
  };
  r.readAsText(file,'UTF-8');
 }
-function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.3,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
+
+let pendingPronoteImport=null;
+function pronoteNormName(x){
+ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim().split(' ').filter(Boolean).sort().join(' ');
+}
+function pronoteNumber(x){
+ let t=String(x??'').trim().replace(/\s/g,'').replace(',','.');
+ if(!t)return null;
+ if(!/^-?\d+(\.\d+)?$/.test(t))return null;
+ let n=Number(t);return Number.isFinite(n)&&n>=0&&n<=20?n:null;
+}
+function previewPronoteGrades(){
+ const file=document.getElementById('pronoteGradesFile')?.files?.[0],box=document.getElementById('pronoteImportPreview');
+ if(!file){alert('Choisis un fichier CSV Pronote.');return}
+ if(!cls()?.students?.length){alert('Cette classe ne contient aucun élève. Importe d’abord la liste des élèves.');return}
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const text=String(reader.result||'').replace(/^\uFEFF/,'');
+   const first=text.split(/\r?\n/).find(x=>x.trim())||'';
+   const sep=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?';':',';
+   const rows=parseCSV(text,sep);
+   if(rows.length<3)throw new Error('Le fichier ne contient pas assez de lignes.');
+   // Pronote exports may contain a metadata/date row, then a header row, then student rows.
+   let headerIndex=rows.findIndex((r,i)=>i<5&&r.some(c=>/moyenne/i.test(c)));
+   if(headerIndex<0)throw new Error('Je ne trouve pas la ligne contenant l’intitulé « Moyenne ». Vérifie qu’il s’agit bien d’un export de notes Pronote.');
+   const header=rows[headerIndex], dateRow=rows[Math.max(0,headerIndex-1)];
+   const meanIndex=header.findIndex(c=>/moyenne/i.test(c));
+   const nameIndex=header.findIndex((c,i)=>i!==meanIndex&&(/élève|eleve|nom|identité|identite/i.test(c)));
+   const dataRows=rows.slice(headerIndex+1).filter(r=>r.length&&r[0]&&!/moyenne de la classe/i.test(r[0]));
+   const students=cls().students;
+   const mapped=[];
+   for(const row of dataRows){
+    let rawName=String(row[nameIndex>=0?nameIndex:0]||'').trim();
+    if(!rawName||/^\d+\s+élèves?$/i.test(rawName))continue;
+    let key=pronoteNormName(rawName);
+    let match=students.find(s=>pronoteNormName(s.name)===key)||null;
+    // A token-set match tolerates reversed "NOM Prénom" / "Prénom NOM" order.
+    if(!match){
+     const tokens=key.split(' ');
+     const candidates=students.filter(s=>{
+      const st=pronoteNormName(s.name).split(' ');
+      return tokens.length>=2&&tokens.length===st.length&&tokens.every(t=>st.includes(t));
+     });
+     if(candidates.length===1)match=candidates[0];
+    }
+    const average=meanIndex>=0?pronoteNumber(row[meanIndex]):null;
+    const marks=[];
+    for(let i=0;i<header.length;i++){
+     if(i===meanIndex||i===(nameIndex>=0?nameIndex:0))continue;
+     const title=String(header[i]||'').trim();
+     const cell=String(row[i]??'').trim();
+     if(!title&&!cell)continue;
+     const date=String(dateRow[i]||'').trim();
+     if(!cell)continue;
+     if(/^abs$/i.test(cell))marks.push({title:title||'Évaluation',date,value:null,status:'Abs'});
+     else if(/^n\.?\s*not\.?$/i.test(cell)||/^non noté$/i.test(cell))marks.push({title:title||'Évaluation',date,value:null,status:'N.Not'});
+     else {
+      const value=pronoteNumber(cell);
+      if(value!==null)marks.push({title:title||'Évaluation',date,value,status:null});
+     }
+    }
+    mapped.push({rawName,studentId:match?.id||null,studentName:match?.name||'',average,marks});
+   }
+   if(!mapped.length)throw new Error('Aucune ligne d’élève exploitable trouvée.');
+   pendingPronoteImport={classId:currentClass,rows:mapped,fileName:file.name};
+   const matched=mapped.filter(x=>x.studentId).length;
+   box.innerHTML=`<div class="notice">Analyse terminée : ${mapped.length} ligne(s), ${matched} correspondance(s) trouvée(s), ${mapped.length-matched} sans correspondance. Aucune note n’a encore été enregistrée.</div>
+    <div style="overflow-x:auto;margin-top:8px"><table><thead><tr><th>Nom dans Pronote</th><th>Élève ProfSuivi</th><th>Moyenne</th><th>Notes détectées</th></tr></thead><tbody>${mapped.map((x,i)=>`<tr><td>${esc(x.rawName)}</td><td>${x.studentId?esc(x.studentName):'<span style="color:#b91c1c">Non trouvé</span>'}</td><td>${x.average===null?'—':String(x.average).replace('.',',')+'/20'}</td><td>${x.marks.length}</td></tr>`).join('')}</tbody></table></div>
+    <p class="muted">Les lignes sans correspondance seront ignorées. Les notes déjà présentes ne seront pas supprimées. Les notes de ce fichier seront ajoutées une seule fois par élève, intitulé, date et valeur.</p>
+    <button class="primary" style="width:100%" onclick="confirmPronoteGradesImport()">Confirmer l’import des notes</button>
+    <button style="width:100%;margin-top:6px" onclick="cancelPronoteGradesImport()">Annuler</button>`;
+  }catch(err){box.innerHTML=`<div class="notice">${esc(err.message||'Impossible de lire ce fichier.')}</div>`}
+ };
+ reader.onerror=()=>{box.innerHTML='<div class="notice">Lecture du fichier impossible.</div>'};
+ reader.readAsText(file,'UTF-8');
+}
+function cancelPronoteGradesImport(){pendingPronoteImport=null;document.getElementById('pronoteImportPreview').innerHTML='';document.getElementById('pronoteGradesFile').value=''}
+function confirmPronoteGradesImport(){
+ const p=pendingPronoteImport;
+ if(!p||p.classId!==currentClass)return alert('L’aperçu n’est plus valide. Recommence l’analyse.');
+ let added=0,skipped=0,averages=0,markers=0;
+ for(const row of p.rows){
+  if(!row.studentId){skipped++;continue}
+  const s=cls().students.find(x=>x.id===row.studentId);if(!s){skipped++;continue}
+  if(row.average!==null){s.pronoteAverage={value:row.average,source:p.fileName,importedAt:new Date().toISOString()};averages++}
+  s.grades=s.grades||[];
+  for(const g of row.marks){
+   const duplicate=s.grades.some(old=>old.source==='Pronote'&&old.title===g.title&&String(old.date||'')===String(g.date||'')&&String(old.value??'')===String(g.value??'')&&String(old.status||'')===String(g.status||''));
+   if(duplicate)continue;
+   s.grades.push({value:g.value,title:g.title,date:g.date,source:'Pronote',status:g.status||null});added++;if(g.status)markers++;
+  }
+ }
+ save();pendingPronoteImport=null;
+ document.getElementById('pronoteImportPreview').innerHTML=`<div class="notice">Import terminé : ${added} note(s) ajoutée(s), ${averages} moyenne(s) Pronote enregistrée(s), ${markers} mention(s) Abs/N.Not conservée(s), ${skipped} élève(s) ignoré(s).</div>`;
+ document.getElementById('pronoteGradesFile').value='';
+ renderRoster();
+}
+
+function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.5,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
 function restore(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('Choisis un fichier de sauvegarde.');let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.data||!Array.isArray(x.data.classes))throw 0;if(!confirm('Remplacer les données actuelles par cette sauvegarde ?'))return;db=x.data;save();currentClass=null;alert('Sauvegarde restaurée.');go('classes')}catch(e){alert('Fichier de sauvegarde invalide.')}};r.readAsText(f)}
 function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function clearAll(){if(!confirm('Effacer définitivement toutes les classes et données enregistrées sur cet appareil ?'))return;if(!confirm('Dernière confirmation : cette action est irréversible sans sauvegarde.'))return;db={classes:[]};save();go('classes')}
