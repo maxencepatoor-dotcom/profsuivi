@@ -603,12 +603,11 @@ function printOneBulletin(id){
 }
 function printBulletinDoc(title,body){
  const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres surgissantes pour imprimer le PDF.');
- w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
-</body></html>`);
- w.document.close();
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}</body></html>`);
+ w.document.close();w.onload=()=>setTimeout(()=>w.print(),300);
 }
 
-function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.6,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
+function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.8,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
 function restore(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('Choisis un fichier de sauvegarde.');let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.data||!Array.isArray(x.data.classes))throw 0;if(!confirm('Remplacer les données actuelles par cette sauvegarde ?'))return;db=x.data;save();currentClass=null;alert('Sauvegarde restaurée.');go('classes')}catch(e){alert('Fichier de sauvegarde invalide.')}};r.readAsText(f)}
 function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function clearAll(){if(!confirm('Effacer définitivement toutes les classes et données enregistrées sur cet appareil ?'))return;if(!confirm('Dernière confirmation : cette action est irréversible sans sauvegarde.'))return;db={classes:[]};save();go('classes')}
