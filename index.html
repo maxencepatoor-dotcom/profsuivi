@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.6 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.7 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -140,9 +140,18 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
   <h2>Bilan et appréciations pour le bulletin Pronote</h2>
   <p class="muted">Prépare une proposition à partir des notes, de la participation, des événements et de tes observations. Chaque texte reste modifiable avant export.</p>
   <div class="grid">
-   <div><label>Période</label><input id="bulletinPeriod" value="Trimestre 1"></div>
+   <div><label>Trimestre</label><select id="bulletinQuarter" onchange="loadQuarterSettings()"><option value="T1">Trimestre 1</option><option value="T2">Trimestre 2</option><option value="T3">Trimestre 3</option></select></div>
    <div><label>Longueur souhaitée</label><select id="bulletinLength"><option value="short">Courte</option><option value="medium" selected>Standard</option><option value="long">Détaillée</option></select></div>
   </div>
+  <h3 style="margin:12px 0 4px">Bilan global du trimestre</h3>
+  <p class="muted">Choisis les tendances générales de la classe. Elles serviront de base aux appréciations ; tu pourras ensuite ajuster chaque élève individuellement.</p>
+  <div class="grid">
+   <div><label>Participation</label><select id="globalParticipation"><option value="positive">Suffisante</option><option value="negative">Insuffisante</option><option value="neutral">À nuancer / non évaluée</option></select></div>
+   <div><label>Comportement</label><select id="globalBehavior"><option value="positive">Satisfaisant</option><option value="negative">Insatisfaisant</option><option value="neutral">À nuancer / non évalué</option></select></div>
+   <div><label>Matériel</label><select id="globalMaterial"><option value="positive">Apporté régulièrement</option><option value="negative">Oublis fréquents</option><option value="neutral">À nuancer / non évalué</option></select></div>
+   <div><label>Travail personnel</label><select id="globalWork"><option value="positive">Suffisant</option><option value="negative">Insuffisant</option><option value="neutral">À nuancer / non évalué</option></select></div>
+  </div>
+  <button style="width:100%;margin-top:8px" onclick="saveQuarterSettings()">Enregistrer le bilan global de ce trimestre</button>
   <button class="primary" style="width:100%;margin-top:8px" onclick="prepareClassBulletins()">Préparer les appréciations de la classe</button>
   <div id="bulletinEditor" style="margin-top:10px"></div>
   <div class="row" style="margin-top:8px">
@@ -398,7 +407,7 @@ function confirmPronoteGradesImport(){
 }
 
 
-// V6.6 — détection locale du trombinoscope et préparation des appréciations.
+// V6.7 — détection locale du trombinoscope et préparation des appréciations.
 let autoTrombiPending=[];
 let bulletinDrafts=[];
 function loadScriptOnce(url){
@@ -490,6 +499,46 @@ function saveAutoTrombi(){
  for(const p of autoTrombiPending){if(!p.studentId||used.has(p.studentId))continue;let s=cls().students.find(x=>x.id===p.studentId);if(!s)continue;s.photo=p.photo;used.add(p.studentId);saved++}
  save();renderRoster();document.getElementById('autoTrombiStatus').textContent=`${saved} portrait(s) enregistré(s). Les élèves non associés restent sans photo.`;document.getElementById('autoTrombiSave').classList.add('hidden');document.getElementById('autoTrombiPreview').innerHTML='';autoTrombiPending=[];
 }
+
+function quarterSettingsKey(){return 'bulletinQuarterSettings_'+currentClass+'_'+(document.getElementById('bulletinQuarter')?.value||'T1')}
+function defaultQuarterSettings(){return {participation:'positive',behavior:'positive',material:'positive',work:'positive'}}
+function loadQuarterSettings(){
+ const saved=JSON.parse(localStorage.getItem(quarterSettingsKey())||'null')||defaultQuarterSettings();
+ for(const [k,id] of Object.entries({participation:'globalParticipation',behavior:'globalBehavior',material:'globalMaterial',work:'globalWork'})){
+  const el=document.getElementById(id);if(el)el.value=saved[k]||'neutral';
+ }
+ const period=document.getElementById('bulletinPeriod');if(period)period.value=document.getElementById('bulletinQuarter').selectedOptions[0].text;
+}
+function saveQuarterSettings(){
+ const settings={participation:document.getElementById('globalParticipation').value,behavior:document.getElementById('globalBehavior').value,material:document.getElementById('globalMaterial').value,work:document.getElementById('globalWork').value};
+ localStorage.setItem(quarterSettingsKey(),JSON.stringify(settings));
+ alert('Bilan global enregistré pour '+document.getElementById('bulletinQuarter').selectedOptions[0].text+'.');
+}
+function getQuarterSettings(){
+ return JSON.parse(localStorage.getItem(quarterSettingsKey())||'null')||{
+  participation:document.getElementById('globalParticipation')?.value||'neutral',
+  behavior:document.getElementById('globalBehavior')?.value||'neutral',
+  material:document.getElementById('globalMaterial')?.value||'neutral',
+  work:document.getElementById('globalWork')?.value||'neutral'
+ };
+}
+function quarterComment(settings){
+ const parts=[];
+ if(settings.participation==='positive')parts.push('La participation est suffisante et régulière.');
+ if(settings.participation==='negative')parts.push('La participation reste insuffisante et doit être davantage investie.');
+ if(settings.participation==='neutral')parts.push('La participation est à consolider.');
+ if(settings.behavior==='positive')parts.push('Le comportement en classe est satisfaisant.');
+ if(settings.behavior==='negative')parts.push('Le comportement en classe doit s’améliorer.');
+ if(settings.behavior==='neutral')parts.push('L’attitude en classe reste à stabiliser.');
+ if(settings.material==='positive')parts.push('Le matériel est apporté régulièrement.');
+ if(settings.material==='negative')parts.push('Les oublis de matériel sont trop fréquents.');
+ if(settings.material==='neutral')parts.push('La régularité concernant le matériel est à consolider.');
+ if(settings.work==='positive')parts.push('Le travail personnel est suffisant.');
+ if(settings.work==='negative')parts.push('Le travail personnel est insuffisant et doit être renforcé.');
+ if(settings.work==='neutral')parts.push('Le travail personnel doit gagner en régularité.');
+ return parts.join(' ');
+}
+
 function bulletinData(s){
  const numeric=(s.grades||[]).filter(g=>g.value!==null&&g.value!==''&&Number.isFinite(Number(g.value)));
  const avg=numeric.length?numeric.reduce((a,g)=>a+Number(g.value),0)/numeric.length:null;
@@ -500,19 +549,21 @@ function bulletinData(s){
 }
 function buildAppreciation(s){
  const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium';
+ const global=quarterComment(getQuarterSettings());
  const positive=d.count('Participation +')+d.count('Comportement +'),negative=d.count('Perturbation')+d.count('Cahier oublié')+d.count('Travail non fait');
  let level=d.avg===null?'':d.avg>=15?'très satisfaisants':d.avg>=12?'satisfaisants':d.avg>=10?'corrects':'fragiles';
  let start=d.avg===null?'Les éléments évalués ne permettent pas encore d’établir un bilan chiffré.':`Les résultats sont ${level}${d.avg!==null?' ('+d.avg.toFixed(1).replace('.',',')+'/20)':''}.`;
  let participation=d.part.avg===null?'La participation n’a pas encore été suffisamment évaluée.':d.part.avg>=3.2?'La participation est active et régulière.':d.part.avg>=2?'La participation est convenable mais pourrait être plus régulière.':'La participation doit gagner en régularité et en engagement.';
  let behavior=negative===0?(positive>0?'L’attitude et l’investissement en classe sont positifs.':''):(`Des efforts sont attendus concernant ${[d.count('Perturbation')?'la concentration et le respect du cadre de travail':'',d.count('Cahier oublié')?'la présence du matériel':'',d.count('Travail non fait')?'la réalisation du travail demandé':''].filter(Boolean).join(', ')}.`);
  let obs=d.notes.length?`Observations : ${d.notes.slice(-3).join(' ; ')}.`:'';
- let text=[start,participation,behavior,obs].filter(Boolean).join(' ');
+ let text=[start,global,obs].filter(Boolean).join(' ');
  if(len==='short')text=text.split(/(?<=[.!?])\s+/).slice(0,2).join(' ');
  if(len==='long'&&d.grades.length>1)text+=` Les résultats aux évaluations montrent ${d.avg>=12?'une bonne maîtrise des compétences travaillées':'des acquis à consolider'} ; il convient de poursuivre les efforts au prochain trimestre.`;
  return text;
 }
 function prepareClassBulletins(){
  const c=cls();if(!c)return;
+ const qs={participation:document.getElementById('globalParticipation').value,behavior:document.getElementById('globalBehavior').value,material:document.getElementById('globalMaterial').value,work:document.getElementById('globalWork').value};localStorage.setItem(quarterSettingsKey(),JSON.stringify(qs));
  bulletinDrafts=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>({id:s.id,name:s.name,text:buildAppreciation(s)}));
  renderBulletinEditor();
 }
@@ -523,18 +574,19 @@ function renderBulletinEditor(){
 }
 function printClassBulletins(){
  if(!bulletinDrafts.length)prepareClassBulletins();if(!bulletinDrafts.length)return;
- const period=esc(document.getElementById('bulletinPeriod').value||'Période'),c=cls();
+ const period=esc(document.getElementById('bulletinQuarter')?.selectedOptions[0]?.text||'Période'),c=cls();
  const body=bulletinDrafts.map(b=>`<article><h2>${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`).join('');
  printBulletinDoc(`Appréciations — ${esc(c.name)} — ${period}`,body);
 }
 function printOneBulletin(id){
  if(!bulletinDrafts.length)prepareClassBulletins();
  const b=bulletinDrafts.find(x=>x.id===id)||bulletinDrafts[0];if(!b)return;
- printBulletinDoc(`Appréciation — ${esc(b.name)} — ${esc(document.getElementById('bulletinPeriod').value||'Période')}`,`<article><h2>${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`);
+ printBulletinDoc(`Appréciation — ${esc(b.name)} — ${esc(document.getElementById('bulletinQuarter')?.selectedOptions[0]?.text||'Période')}`,`<article><h2>${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`);
 }
 function printBulletinDoc(title,body){
  const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres surgissantes pour imprimer le PDF.');
- w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script><script>document.addEventListener('DOMContentLoaded',()=>{try{loadQuarterSettings()}catch(e){}});</script>
+</body></html>`);
  w.document.close();
 }
 
@@ -546,4 +598,5 @@ document.getElementById('sessionNo').addEventListener('change',()=>{document.get
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 renderClasses();go('classes');
 </script>
+<script>document.addEventListener('DOMContentLoaded',()=>{try{loadQuarterSettings()}catch(e){}});</script>
 </body></html>
