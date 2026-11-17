@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.8 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.8.1 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -425,7 +425,7 @@ function confirmPronoteGradesImport(){
 }
 
 
-// V6.8 — détection locale du trombinoscope et préparation des appréciations.
+// V6.8.1 — détection locale du trombinoscope et préparation des appréciations.
 let autoTrombiPending=[];
 let bulletinDrafts=[];
 function loadScriptOnce(url){
@@ -603,7 +603,7 @@ function printOneBulletin(id){
 }
 function printBulletinDoc(title,body){
  const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres surgissantes pour imprimer le PDF.');
- w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script><script>document.addEventListener('DOMContentLoaded',()=>{try{loadQuarterSettings()}catch(e){}});</script>
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script>
 </body></html>`);
  w.document.close();
 }
