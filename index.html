@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.9 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V7.0 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -635,60 +635,116 @@ function studentBulletinCriteria(s){
 
 function bulletinFirstName(s){
  if(s.firstName)return String(s.firstName).trim();
- const raw=String(s.name||'').trim();
- if(!raw)return 'L’élève';
- const parts=raw.split(/\s+/);
- // ProfSuivi imports commonly store "NOM Prénom"; use the final token as the first name.
- return parts.length>1?parts[parts.length-1]:parts[0];
+ const raw=String(s.name||'').trim();if(!raw)return 'L’élève';
+ const parts=raw.split(/\s+/);return parts.length>1?parts[parts.length-1]:parts[0];
 }
-function criteriaText(c,first){
- const phrases=[];
- if(c.participation==='positive')phrases.push(`${first} participe avec sérieux et prend sa place dans les activités.`);
- if(c.participation==='negative')phrases.push(`${first} doit davantage prendre part aux activités et oser participer.`);
- if(c.behavior==='positive')phrases.push(`Son attitude en classe est sérieuse et contribue au bon déroulement du cours.`);
- if(c.behavior==='negative')phrases.push(`Une attitude plus attentive et respectueuse est attendue pour travailler dans de bonnes conditions.`);
- if(c.material==='positive')phrases.push(`${first} vient régulièrement avec le matériel nécessaire, ce qui lui permet de travailler dans de bonnes conditions.`);
- if(c.material==='negative')phrases.push(`Les oublis de matériel sont encore trop fréquents et gênent son travail.`);
- if(c.work==='positive')phrases.push(`Le travail personnel est régulier et permet de consolider les apprentissages.`);
- if(c.work==='negative')phrases.push(`Le travail personnel reste à approfondir pour consolider les apprentissages.`);
- return phrases;
+function bulletinSentenceBank(s,c,first,variant){
+ const bank=[];
+ if(c.participation==='positive')bank.push([
+  `${first} participe volontiers et s'investit dans les activités proposées.`,
+  `La participation de ${first} est régulière et appréciée en classe.`,
+  `${first} prend une part active au travail mené en cours.`
+ ][variant%3]);
+ else if(c.participation==='negative')bank.push([
+  `${first} gagnerait à participer davantage et à s'impliquer plus régulièrement.`,
+  `Il faut encourager ${first} à prendre davantage la parole et à participer aux activités.`,
+  `Une participation plus régulière permettrait à ${first} de mieux progresser.`
+ ][variant%3]);
+ if(c.behavior==='positive')bank.push([
+  `L'attitude en classe est sérieuse et agréable.`,
+  `Le comportement est satisfaisant et le travail en classe se déroule dans de bonnes conditions.`,
+  `Le sérieux et l'attitude en classe sont à souligner.`
+ ][variant%3]);
+ else if(c.behavior==='negative')bank.push([
+  `Une attitude plus attentive est nécessaire pour travailler sereinement.`,
+  `Le comportement doit s'améliorer afin de permettre un travail plus efficace.`,
+  `Davantage de calme et d'attention sont attendus en classe.`
+ ][variant%3]);
+ if(c.material==='positive')bank.push([
+  `Le matériel est apporté régulièrement, ce qui facilite le travail.`,
+  `${first} pense à venir avec le matériel nécessaire.`,
+  `Les affaires sont généralement prêtes pour commencer le cours dans de bonnes conditions.`
+ ][variant%3]);
+ else if(c.material==='negative')bank.push([
+  `Les oublis de matériel restent trop fréquents et pénalisent le travail.`,
+  `${first} doit veiller à apporter plus régulièrement le matériel demandé.`,
+  `Il est important de mieux anticiper les affaires nécessaires pour chaque séance.`
+ ][variant%3]);
+ if(c.work==='positive')bank.push([
+  `Le travail personnel est sérieux et régulier.`,
+  `Les efforts fournis en dehors de la classe permettent de consolider les acquis.`,
+  `Le travail personnel est satisfaisant et doit être poursuivi.`
+ ][variant%3]);
+ else if(c.work==='negative')bank.push([
+  `Le travail personnel doit être plus régulier et approfondi.`,
+  `Un investissement plus important dans le travail personnel est attendu.`,
+  `Il reste nécessaire de revoir plus régulièrement les notions travaillées en classe.`
+ ][variant%3]);
+ return bank;
 }
-function buildAppreciation(s){
- const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',c=studentBulletinCriteria(s),first=bulletinFirstName(s);
- let opening;
- if(d.avg===null)opening=`${first}, le peu d’évaluations réalisées ce trimestre ne permet pas encore de situer précisément ton niveau.`;
- else if(d.avg>=16)opening=`${first} réalise un excellent trimestre, avec des résultats très solides.`;
- else if(d.avg>=14)opening=`${first} réalise un très bon trimestre et montre une bonne maîtrise des activités proposées.`;
- else if(d.avg>=12)opening=`${first} réalise un bon trimestre. Les résultats sont satisfaisants et les acquis sont encourageants.`;
- else if(d.avg>=10)opening=`${first} obtient des résultats convenables, mais doit poursuivre ses efforts pour progresser.`;
- else opening=`${first} rencontre encore des difficultés ce trimestre. Les résultats restent fragiles et demandent davantage de travail.`;
- const details=criteriaText(c,first);
- const observations=d.notes.slice(-2).filter(Boolean);
- let text=[opening,...details];
- if(observations.length)text.push(`À retenir également : ${observations.join(' ; ')}.`);
- if(len==='short')text=text.slice(0,2);
- if(len==='long'&&d.grades.length>1){
-  if(d.avg!==null&&d.avg>=12)text.push(`${first} doit poursuivre dans cette voie pour maintenir ces acquis.`);
-  else text.push(`Un investissement plus régulier aidera ${first} à progresser au prochain trimestre.`);
- }
- return text.join(' ');
+function buildAppreciation(s,variant=0){
+ const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
+ let openings;
+ if(d.avg===null)openings=[
+  `Le manque d'évaluations ne permet pas encore de situer précisément le niveau de ${first}.`,
+  `Les évaluations sont encore trop peu nombreuses pour apprécier pleinement le travail de ${first}.`,
+  `Il est difficile de dresser un bilan précis pour ${first}, faute d'évaluations suffisantes ce trimestre.`
+ ];
+ else if(d.avg>=16)openings=[
+  `${first} réalise un excellent trimestre, avec des résultats très solides.`,
+  `Excellent trimestre pour ${first} : les résultats témoignent d'une très bonne maîtrise.`,
+  `${first} obtient de très bons résultats et fournit un travail de grande qualité.`
+ ];
+ else if(d.avg>=14)openings=[
+  `${first} réalise un très bon trimestre. Les résultats sont solides et encourageants.`,
+  `Un très bon trimestre pour ${first}, avec un travail sérieux et des résultats satisfaisants.`,
+  `${first} obtient de bons résultats et montre une bonne maîtrise des activités proposées.`
+ ];
+ else if(d.avg>=12)openings=[
+  `${first} réalise un trimestre satisfaisant. Les acquis sont encourageants.`,
+  `Le bilan de ${first} est positif, même si certains points peuvent encore être approfondis.`,
+  `${first} obtient des résultats convenables et doit poursuivre ses efforts.`
+ ];
+ else if(d.avg>=10)openings=[
+  `Les résultats de ${first} sont encore fragiles, mais des progrès restent à portée de travail.`,
+  `${first} obtient des résultats justes. Un investissement plus régulier permettra de progresser.`,
+  `Le trimestre de ${first} est moyen. Il faut poursuivre les efforts et gagner en régularité.`
+ ];
+ else openings=[
+  `${first} rencontre des difficultés ce trimestre. Les résultats restent insuffisants et demandent davantage de travail.`,
+  `Le bilan est fragile pour ${first}. Un travail plus régulier est indispensable pour progresser.`,
+  `${first} doit renforcer son investissement afin de surmonter les difficultés rencontrées.`
+ ];
+ const opening=openings[v%openings.length],details=bulletinSentenceBank(s,c,first,v),observations=d.notes.slice(-2).filter(Boolean);
+ let sentences=[opening,...details];
+ if(observations.length)sentences.push(`À noter également : ${observations.join(' ; ')}.`);
+ if(d.avg!==null&&d.avg>=16&&c.participation!=='negative'&&c.work!=='negative')sentences.push(['Il faut poursuivre ainsi.','Continue sur cette très bonne dynamique.','Bravo pour ce travail, à poursuivre.'][v%3]);
+ else if(d.avg!==null&&d.avg<12)sentences.push(['Des efforts réguliers sont attendus au prochain trimestre.',"Il faut s'accrocher et maintenir les efforts dans la durée.",'Une meilleure régularité aidera à obtenir des résultats plus satisfaisants.'][v%3]);
+ if(len==='short')sentences=sentences.slice(0,Math.min(2,sentences.length));
+ if(len==='medium'&&sentences.length>4)sentences=sentences.slice(0,4);
+ return sentences.join(' ');
 }
+
 function prepareClassBulletins(){
  const c=cls();if(!c)return;
  const q=document.getElementById('bulletinQuarter')?.value||'T1';
- bulletinDrafts=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>({id:s.id,name:s.name,text:buildAppreciation(s),criteria:{...studentBulletinCriteria(s)},quarter:q}));
+ bulletinDrafts=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>({id:s.id,name:s.name,text:buildAppreciation(s,0),variant:0,criteria:{...studentBulletinCriteria(s)},quarter:q}));
  renderBulletinEditor();
 }
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
  const opts=(v,pos,neg)=>`<option value="neutral" ${v==='neutral'?'selected':''}>À définir</option><option value="positive" ${v==='positive'?'selected':''}>${pos}</option><option value="negative" ${v==='negative'?'selected':''}>${neg}</option>`;
- box.innerHTML=bulletinDrafts.map((b,i)=>`<div class="bulletin-card"><b>${esc(b.name)}</b><div class="grid" style="margin-top:8px"><div><label>Participation</label><select data-crit="participation" data-index="${i}">${opts(b.criteria.participation,'Suffisante','Insuffisante')}</select></div><div><label>Comportement</label><select data-crit="behavior" data-index="${i}">${opts(b.criteria.behavior,'Satisfaisant','Insatisfaisant')}</select></div><div><label>Matériel</label><select data-crit="material" data-index="${i}">${opts(b.criteria.material,'Apporté régulièrement','Oublis fréquents')}</select></div><div><label>Travail personnel</label><select data-crit="work" data-index="${i}">${opts(b.criteria.work,'Suffisant','Insuffisant')}</select></div></div><button class="small" onclick="regenerateBulletin(${i})">Actualiser l’appréciation</button><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`).join('');
+ box.innerHTML=bulletinDrafts.map((b,i)=>`<div class="bulletin-card"><b>${esc(b.name)}</b><div class="grid" style="margin-top:8px"><div><label>Participation</label><select data-crit="participation" data-index="${i}">${opts(b.criteria.participation,'Suffisante','Insuffisante')}</select></div><div><label>Comportement</label><select data-crit="behavior" data-index="${i}">${opts(b.criteria.behavior,'Satisfaisant','Insatisfaisant')}</select></div><div><label>Matériel</label><select data-crit="material" data-index="${i}">${opts(b.criteria.material,'Apporté régulièrement','Oublis fréquents')}</select></div><div><label>Travail personnel</label><select data-crit="work" data-index="${i}">${opts(b.criteria.work,'Suffisant','Insuffisant')}</select></div></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`).join('');
  box.querySelectorAll('select[data-crit]').forEach(el=>el.onchange=()=>{const b=bulletinDrafts[+el.dataset.index],s=cls().students.find(x=>x.id===b.id);b.criteria[el.dataset.crit]=el.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
  box.querySelectorAll('textarea[data-bulletin]').forEach(t=>t.oninput=()=>bulletinDrafts[+t.dataset.bulletin].text=t.value);
 }
 function regenerateBulletin(i){
  const b=bulletinDrafts[i],s=cls().students.find(x=>x.id===b.id);if(!s)return;
- s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();b.text=buildAppreciation(s);renderBulletinEditor();
+ s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();b.variant=0;b.text=buildAppreciation(s,0);renderBulletinEditor();
+}
+function anotherBulletinWording(i){
+ const b=bulletinDrafts[i],s=cls().students.find(x=>x.id===b.id);if(!s)return;
+ b.variant=(b.variant||0)+1;b.text=buildAppreciation(s,b.variant);renderBulletinEditor();
 }
 function printClassBulletins(){
  if(!bulletinDrafts.length)prepareClassBulletins();if(!bulletinDrafts.length)return;
@@ -785,34 +841,51 @@ async function readGradePhoto(){
 }
 function gradeWordNorm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9,.-]/g,'').replace(',', '.').trim()}
 function gradeNum(v){let x=String(v||'').replace(',','.').replace(/[oO]/g,'0').replace(/[lI]/g,'1');if(!/^\d{1,2}(\.\d{1,2})?$/.test(x))return null;let n=Number(x);return n>=0&&n<=20?n:null}
-function gradeRowsFromWords(words){const a=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??80)>5).map(w=>({text:String(w.text).trim(),x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0,x0:w.bbox.x0,x1:w.bbox.x1})).filter(w=>w.text);a.sort((u,v)=>u.y-v.y||u.x-v.x);let rows=[];for(const w of a){let r=rows.find(r=>Math.abs(r.y-w.y)<Math.max(9,Math.min(r.h,w.h)*.65));if(!r){r={y:w.y,h:w.h,words:[]};rows.push(r)}r.words.push(w);r.y=r.words.reduce((n,x)=>n+x.y,0)/r.words.length;r.h=Math.max(r.h,w.h)}rows.forEach(r=>r.words.sort((u,v)=>u.x-v.x));return rows}
+function gradeRowsFromWords(words){
+ const a=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??80)>5).map(w=>({text:String(w.text).trim(),x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0,x0:w.bbox.x0,x1:w.bbox.x1})).filter(w=>w.text);
+ a.sort((u,v)=>u.y-v.y||u.x-v.x);
+ // First group loosely to identify a header line and estimate the photo's horizontal tilt.
+ let rough=[];for(const w of a){let r=rough.find(r=>Math.abs(r.y-w.y)<22);if(!r){r={y:w.y,words:[]};rough.push(r)}r.words.push(w);r.y=r.words.reduce((n,x)=>n+x.y,0)/r.words.length}
+ const headers=rough.filter(r=>{const t=r.words.map(w=>gradeWordNorm(w.text)).join(' ');return /total|tot/.test(t)&&/(paroles|hauteur|volume|note)/.test(t)}).sort((a,b)=>b.words.length-a.words.length);
+ let slope=0;
+ if(headers.length){const pts=headers[0].words;const mx=pts.reduce((n,w)=>n+w.x,0)/pts.length,my=pts.reduce((n,w)=>n+w.y,0)/pts.length;let num=0,den=0;pts.forEach(w=>{num+=(w.x-mx)*(w.y-my);den+=(w.x-mx)**2});if(den)slope=num/den}
+ a.forEach(w=>w.baseY=w.y-slope*w.x);
+ let rows=[];for(const w of a){let r=rows.find(r=>Math.abs(r.baseY-w.baseY)<Math.max(13,Math.min(r.h||w.h,w.h)*.9));if(!r){r={baseY:w.baseY,h:w.h,words:[]};rows.push(r)}r.words.push(w);r.baseY=r.words.reduce((n,x)=>n+x.baseY,0)/r.words.length;r.h=Math.max(r.h,w.h)}
+ rows.forEach(r=>{r.words.sort((u,v)=>u.x-v.x);r.y=r.words.reduce((n,w)=>n+w.y,0)/r.words.length});return rows;
+}
+function gradeNameScore(studentName,rowText){
+ const wanted=String(studentName||'').split(/\s+/).map(gradeWordNorm).filter(x=>x.length>1),got=String(rowText||'').split(/\s+/).map(gradeWordNorm).filter(x=>x.length>1);if(!wanted.length)return 0;
+ const edit=(a,b)=>{let p=Array.from({length:b.length+1},(_,i)=>i);for(let i=1;i<=a.length;i++){let q=[i];for(let j=1;j<=b.length;j++)q[j]=Math.min(q[j-1]+1,p[j]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q}return p[b.length]};
+ let sum=0;for(const w of wanted){let best=0;for(const g of got){if(g===w||g.includes(w)||w.includes(g))best=1;else best=Math.max(best,1-edit(w,g)/Math.max(w.length,g.length))}sum+=best}return sum/wanted.length;
+}
 function parseGradeTableWords(words,rawText){
  const status=document.getElementById('gradePhotoStatus'),review=document.getElementById('gradePhotoReview'),students=cls()?.students||[],rows=gradeRowsFromWords(words);
  const totalHeaders=[];
- for(const r of rows){for(const w of r.words){const t=gradeWordNorm(w.text);if(/^(total|tot)$/i.test(t))totalHeaders.push({y:r.y,x:w.x})}}
- if(!totalHeaders.length){status.textContent='Je ne repère pas la colonne TOTAL. Vérifie que son en-tête est visible sur la photo.';review.innerHTML=`<details><summary>Texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
- const nameMatches=[];
+ for(const r of rows){for(const w of r.words){const t=gradeWordNorm(w.text);if(/^(total|tot)$/i.test(t))totalHeaders.push({y:r.y,baseY:r.baseY,x:w.x})}}
+ if(!totalHeaders.length){status.textContent='Je ne repère pas l’en-tête TOTAL. Aucune note ne sera importée.';review.innerHTML=`<details><summary>Voir le texte reconnu</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
+ const foundRows=[],incompleteRows=[];
  for(const r of rows){
-  if(totalHeaders.some(h=>Math.abs(r.y-h.y)<24))continue;
-  const rowText=r.words.map(w=>w.text).join(' '),norm=gradeWordNorm(rowText);
-  let found=null,score=0;
-  for(const st of students){const parts=String(st.name||'').split(/\s+/).map(gradeWordNorm).filter(x=>x.length>1);if(!parts.length)continue;const hits=parts.filter(t=>norm.includes(t)).length,sc=hits/parts.length;if(sc>score){score=sc;found=st}}
-  if(!found||score<.99)continue;
-  const numeric=r.words.map(w=>({x:w.x,v:gradeNum(w.text)})).filter(x=>x.v!==null&&x.v>=0&&x.v<=20);
-  if(!numeric.length)continue;
-  const closestHeader=totalHeaders.reduce((best,h)=>Math.abs(h.y-r.y)<Math.abs(best.y-r.y)?h:best,totalHeaders[0]);
-  const sorted=numeric.map(n=>({...n,dist:Math.abs(n.x-closestHeader.x)})).sort((a,b)=>a.dist-b.dist);
-  const candidate=sorted[0],other=sorted[1];
-  if(other&&candidate.dist>Math.abs(other.x-candidate.x)*.48)continue;
-  nameMatches.push({studentId:found.id,name:found.name,total:candidate.v,line:rowText,y:r.y});
+  if(totalHeaders.some(h=>Math.abs(h.baseY-r.baseY)<18))continue;
+  const rowText=r.words.map(w=>w.text).join(' ');let found=null,score=0;
+  for(const st of students){const sc=gradeNameScore(st.name,rowText);if(sc>score){score=sc;found=st}}
+  if(!found||score<.78)continue;
+  const nums=r.words.map(w=>({x:w.x,v:gradeNum(w.text)})).filter(n=>n.v!==null&&n.v>=0&&n.v<=20).sort((a,b)=>a.x-b.x);
+  // This table has four criteria plus TOTAL: require all five numeric cells.
+  // If OCR splits a row or misses a value, do not mistake a criterion for TOTAL.
+  if(nums.length<5){incompleteRows.push(found.name);continue;}
+  const candidate=nums[nums.length-1];
+  const header=totalHeaders.reduce((best,h)=>Math.abs(h.baseY-r.baseY)<Math.abs(best.baseY-r.baseY)?h:best,totalHeaders[0]);
+  if(candidate.x<header.x-35)continue;
+  foundRows.push({studentId:found.id,name:found.name,total:candidate.v,line:rowText,y:r.y,confidence:score});
  }
- const merged={};
- nameMatches.forEach(e=>{const m=merged[e.studentId]||(merged[e.studentId]={studentId:e.studentId,name:e.name,total:e.total,lines:[]});m.total=Math.max(m.total,e.total);m.lines.push(e.line)});
+ const merged={};foundRows.forEach(e=>{const m=merged[e.studentId]||(merged[e.studentId]={studentId:e.studentId,name:e.name,total:e.total,lines:[],confidence:e.confidence});m.total=Math.max(m.total,e.total);m.lines.push(e.line);m.confidence=Math.max(m.confidence,e.confidence)});
  pendingPhotoGrades=Object.values(merged);
- const cards=pendingPhotoGrades.map((e,i)=>`<div class="bulletin-card"><b>${esc(e.name)}</b><div class="muted">${e.lines.length>1?'Plusieurs passages détectés : meilleure note totale retenue.':'Un passage détecté.'}</div><label>Note totale sur 20</label><input type="number" min="0" max="20" step="0.5" value="${e.total}" data-photo-total-row="${i}"><p><b>Note retenue : ${e.total}/20</b></p></div>`).join('');
- review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) reconnu(s) sur ${students.length}. La note est lue sous la colonne TOTAL, selon la position de son en-tête. Les passages multiples sont fusionnés en conservant le meilleur total.</p>${cards}<details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider l’import des notes</button>`;
- status.textContent=pendingPhotoGrades.length?'Tableau analysé. Vérifie les notes totales avant import.':'Aucun total fiable reconnu. Vérifie la photo ou les noms de la classe.';
+ const cards=pendingPhotoGrades.map((e,i)=>`<div class="bulletin-card"><b>${esc(e.name)}</b><div class="muted">${e.lines.length>1?'Plusieurs passages détectés : meilleur total conservé.':'Passage détecté.'}</div><label>Note totale sur 20</label><input type="number" min="0" max="20" step="0.5" value="${e.total}" data-photo-total-row="${i}"><p><b>Note proposée : ${e.total}/20</b></p></div>`).join('');
+ const missing=students.filter(s=>!merged[s.id]).map(s=>s.name),incomplete=[...new Set(incompleteRows)];
+ review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) reconnu(s) sur ${students.length}. La note proposée est la dernière des cinq valeurs numériques de la ligne (colonne TOTAL). Les passages multiples sont fusionnés en conservant le meilleur total. Les lignes incomplètes ne sont pas importées automatiquement.</p>${cards}<p class="muted">Lignes à vérifier (${incomplete.length}) : ${esc(incomplete.join(', ')||'aucune')}</p><p class="muted">Élèves non reconnus (${missing.length}) : ${esc(missing.join(', ')||'aucun')}</p><details><summary>Voir le texte reconnu</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>${pendingPhotoGrades.length?'<button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider l’import des notes</button>':''}`;
+ status.textContent=pendingPhotoGrades.length?'Analyse terminée. Vérifie les notes proposées et les élèves non reconnus.':'Aucune note fiable reconnue. Aucune importation possible.';
 }
+
 function confirmPhotoGradeImport(){const c=cls();if(!c||!pendingPhotoGrades.length)return alert('Aucune note à importer.');const inputs=[...document.querySelectorAll('[data-photo-total-row]')],byRow={};inputs.forEach(el=>{byRow[+el.dataset.photoTotalRow]=el.value===''?null:Number(el.value)});const ready=pendingPhotoGrades.map((e,i)=>({...e,total:byRow[i]??e.total}));const invalid=ready.filter(e=>!Number.isFinite(e.total)||e.total<0||e.total>20);if(invalid.length)return alert('Certaines notes totales sont absentes ou invalides. Corrige-les avant de valider.');if(!confirm('Importer '+ready.length+' élève(s) ? Seule la colonne TOTAL est prise en compte. Pour les élèves présents plusieurs fois, le meilleur total est conservé.'))return;const date=new Date().toISOString().slice(0,10);ready.forEach(e=>{const st=c.students.find(x=>x.id===e.studentId);if(!st)return;st.grades=st.grades||[];st.grades.push({value:e.total,title:'Évaluation — import photo (TOTAL)',date,source:'Photo',details:{total:e.total,method:'Colonne TOTAL uniquement'}})});save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' note(s) totale(s) ajoutée(s).';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];renderRoster()}
 
 
