@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.8 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.9 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -814,6 +814,26 @@ function parseGradeTableWords(words,rawText){
  status.textContent=pendingPhotoGrades.length?'Tableau analysé. Vérifie les notes totales avant import.':'Aucun total fiable reconnu. Vérifie la photo ou les noms de la classe.';
 }
 function confirmPhotoGradeImport(){const c=cls();if(!c||!pendingPhotoGrades.length)return alert('Aucune note à importer.');const inputs=[...document.querySelectorAll('[data-photo-total-row]')],byRow={};inputs.forEach(el=>{byRow[+el.dataset.photoTotalRow]=el.value===''?null:Number(el.value)});const ready=pendingPhotoGrades.map((e,i)=>({...e,total:byRow[i]??e.total}));const invalid=ready.filter(e=>!Number.isFinite(e.total)||e.total<0||e.total>20);if(invalid.length)return alert('Certaines notes totales sont absentes ou invalides. Corrige-les avant de valider.');if(!confirm('Importer '+ready.length+' élève(s) ? Seule la colonne TOTAL est prise en compte. Pour les élèves présents plusieurs fois, le meilleur total est conservé.'))return;const date=new Date().toISOString().slice(0,10);ready.forEach(e=>{const st=c.students.find(x=>x.id===e.studentId);if(!st)return;st.grades=st.grades||[];st.grades.push({value:e.total,title:'Évaluation — import photo (TOTAL)',date,source:'Photo',details:{total:e.total,method:'Colonne TOTAL uniquement'}})});save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' note(s) totale(s) ajoutée(s).';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];renderRoster()}
+
+
+// V6.9.9 — prevent a stale/autofilled class search from hiding the saved classes.
+function restoreClassListIfHidden(){
+ const input=document.getElementById('classSearch');
+ if(!input)return;
+ const q=(input.value||'').trim().toLowerCase();
+ if(q && db.classes.length && !db.classes.some(c=>String(c.name||'').toLowerCase().includes(q))){
+  input.value='';
+ }
+ renderClasses();
+}
+(function(){
+ const input=document.getElementById('classSearch');
+ if(input)input.value='';
+ restoreClassListIfHidden();
+ window.addEventListener('pageshow',()=>{
+  if(page==='classes')restoreClassListIfHidden();
+ });
+})();
 
 </script>
 <script></script>
