@@ -77,7 +77,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 .grade-photo-preview{display:block;max-width:100%;max-height:260px;object-fit:contain;margin:8px auto;border-radius:10px;border:1px solid var(--line)}.grade-photo-quality{padding:10px;border-radius:10px;margin-top:8px}.grade-photo-quality.good{background:#e8f6ed;color:#17633a}.grade-photo-quality.warn{background:#fff3d9;color:#805300}.grade-photo-quality.bad{background:#fde8e7;color:#8d2520}</style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V7.1.2 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V7.2.1 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -111,21 +111,6 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
   <div class="statsgrid" id="classStats"></div>
  </div>
  <div class="panel" style="padding:11px"><div class="row between"><strong>Repères de la classe</strong><span class="muted">Participation sur 5 séances</span></div><div id="classAverage" class="muted" style="margin-top:7px"></div></div>
- <div class="panel photo-panel">
-  <div class="row between"><h2>Trombinoscope</h2><span class="pill">Stockage local</span></div>
-  <p class="muted">Découpage manuel de secours : importe une photo, touche le centre d’un visage, puis associe le portrait à un élève. Pour une planche Pronote, utilise plutôt le module automatique ci-dessous.</p>
-  <label>Photo de la classe</label><input id="classPhotoFile" type="file" accept="image/*">
-  <div class="photo-stage" id="photoStage" style="margin-top:8px"><div class="hint">La photo apparaîtra ici. Touche le centre d'un visage pour créer son portrait.</div></div>
-  <div id="cropControls" class="hidden" style="margin-top:10px">
-   <div class="row between"><div><b>Vérifier le portrait</b><div class="muted">Ajuste la taille du cadrage.</div></div><img id="cropPreview" class="crop-preview" alt="Aperçu"></div>
-   <label style="margin-top:8px">Associer à l'élève</label><select id="cropStudent"></select>
-   <label style="margin-top:8px">Taille du cadrage</label><input id="cropSize" type="range" min="12" max="38" value="22">
-   <button class="primary" style="width:100%;margin-top:8px" onclick="savePortrait()">Enregistrer le portrait</button>
-  </div>
-  <div class="row between" style="margin-top:12px"><b>Portraits associés</b><span class="muted" id="portraitCount"></span></div><div id="portraitGrid" class="portrait-grid"></div>
- </div>
-
-
  <div class="panel">
   <h2>Trombinoscope automatique Pronote</h2>
   <p class="muted">Importe une capture complète du trombinoscope. ProfSuivi repère chaque portrait, lit le nom et le prénom juste en dessous (même sur deux lignes), puis prépare les associations. Tu vérifies avant d’enregistrer.</p>
@@ -684,43 +669,90 @@ function bulletinSentenceBank(s,c,first,variant){
  return bank;
 }
 function buildAppreciation(s,variant=0){
- const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
- let openings;
- if(d.avg===null)openings=[
-  `Le manque d'évaluations ne permet pas encore de situer précisément le niveau de ${first}.`,
-  `Les évaluations sont encore trop peu nombreuses pour apprécier pleinement le travail de ${first}.`,
-  `Il est difficile de dresser un bilan précis pour ${first}, faute d'évaluations suffisantes ce trimestre.`
- ];
- else if(d.avg>=16)openings=[
-  `${first} réalise un excellent trimestre, avec des résultats très solides.`,
-  `Excellent trimestre pour ${first} : les résultats témoignent d'une très bonne maîtrise.`,
-  `${first} obtient de très bons résultats et fournit un travail de grande qualité.`
- ];
- else if(d.avg>=14)openings=[
-  `${first} réalise un très bon trimestre. Les résultats sont solides et encourageants.`,
-  `Un très bon trimestre pour ${first}, avec un travail sérieux et des résultats satisfaisants.`,
-  `${first} obtient de bons résultats et montre une bonne maîtrise des activités proposées.`
- ];
- else if(d.avg>=12)openings=[
-  `${first} réalise un trimestre satisfaisant. Les acquis sont encourageants.`,
-  `Le bilan de ${first} est positif, même si certains points peuvent encore être approfondis.`,
-  `${first} obtient des résultats convenables et doit poursuivre ses efforts.`
- ];
- else if(d.avg>=10)openings=[
-  `Les résultats de ${first} sont encore fragiles, mais des progrès restent à portée de travail.`,
-  `${first} obtient des résultats justes. Un investissement plus régulier permettra de progresser.`,
-  `Le trimestre de ${first} est moyen. Il faut poursuivre les efforts et gagner en régularité.`
- ];
- else openings=[
-  `${first} rencontre des difficultés ce trimestre. Les résultats restent insuffisants et demandent davantage de travail.`,
-  `Le bilan est fragile pour ${first}. Un travail plus régulier est indispensable pour progresser.`,
-  `${first} doit renforcer son investissement afin de surmonter les difficultés rencontrées.`
- ];
- const opening=openings[v%openings.length],details=bulletinSentenceBank(s,c,first,v),observations=d.notes.slice(-2).filter(Boolean);
- let sentences=[opening,...details];
- if(observations.length)sentences.push(`À noter également : ${observations.join(' ; ')}.`);
- if(d.avg!==null&&d.avg>=16&&c.participation!=='negative'&&c.work!=='negative')sentences.push(['Il faut poursuivre ainsi.','Continue sur cette très bonne dynamique.','Bravo pour ce travail, à poursuivre.'][v%3]);
- else if(d.avg!==null&&d.avg<12)sentences.push(['Des efforts réguliers sont attendus au prochain trimestre.',"Il faut s'accrocher et maintenir les efforts dans la durée.",'Une meilleure régularité aidera à obtenir des résultats plus satisfaisants.'][v%3]);
+ const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',
+ c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
+ const pick=a=>a[v%a.length];
+ let opening;
+ if(d.avg===null) opening=pick([
+  `Les évaluations sont encore trop peu nombreuses pour situer précisément le niveau de ${first}. Il faudra profiter des prochaines activités pour montrer ce dont ${first} est capable.`,
+  `Le bilan de ${first} reste difficile à établir, car nous avons encore peu d'évaluations. J'attends de voir davantage son travail lors du prochain trimestre.`
+ ]);
+ else if(d.avg>=16) opening=pick([
+  `Excellent trimestre pour ${first} ! ${first} fournit un travail de grande qualité et montre une très bonne maîtrise des activités.`,
+  `Très beau trimestre pour ${first}, qui obtient d'excellents résultats. Son sérieux lui permet de réussir avec régularité.`,
+  `${first} réalise un excellent trimestre. Les résultats sont très solides et le travail fourni mérite d'être souligné.`
+ ]);
+ else if(d.avg>=14) opening=pick([
+  `Très bon trimestre pour ${first} ! Les résultats sont solides et montrent un travail sérieux.`,
+  `${first} réalise un très bon trimestre. Le travail est bien mené et les résultats sont au rendez-vous.`,
+  `Un trimestre très satisfaisant pour ${first}, qui progresse dans les activités et obtient de bons résultats.`
+ ]);
+ else if(d.avg>=12) opening=pick([
+  `Le trimestre de ${first} est satisfaisant. Les résultats sont encourageants et les acquis se consolident.`,
+  `${first} réalise un trimestre plutôt positif. Il faut continuer à s'investir pour gagner encore en assurance.`,
+  `Un bilan satisfaisant pour ${first}, même si certains points méritent encore d'être travaillés.`
+ ]);
+ else if(d.avg>=10) opening=pick([
+  `Le trimestre de ${first} reste un peu juste. Des efforts sont visibles, mais il faut gagner en régularité pour progresser.`,
+  `${first} obtient des résultats encore fragiles. Avec davantage de constance et d'implication, des progrès sont possibles.`,
+  `Le bilan est mitigé pour ${first}. Il faut poursuivre les efforts et s'investir davantage dans les activités.`
+ ]);
+ else opening=pick([
+  `Le trimestre de ${first} est difficile et les résultats restent insuffisants. Il est important de reprendre les notions et de s'impliquer davantage.`,
+  `${first} rencontre encore des difficultés. Un travail plus régulier et une participation plus active sont nécessaires pour progresser.`,
+  `Les résultats de ${first} sont trop fragiles ce trimestre. Il faut réagir et fournir des efforts plus réguliers.`
+ ]);
+ const engagement=[];
+ if(c.participation==='positive'&&c.behavior==='positive') engagement.push(pick([
+  `En classe, ${first} participe volontiers et adopte une attitude très positive.`,
+  `${first} se montre volontaire, attentif et agréable dans le travail collectif.`,
+  `Sa participation et son attitude en classe contribuent à une bonne dynamique de travail.`
+ ]));
+ else if(c.participation==='positive') engagement.push(pick([
+  `${first} participe volontiers et prend part aux activités proposées.`,
+  `La participation de ${first} est appréciée et montre une réelle envie de s'impliquer.`
+ ]));
+ else if(c.participation==='negative'&&c.behavior==='negative') engagement.push(pick([
+  `${first} doit encore apprendre à s'impliquer davantage et à adopter une attitude plus attentive en classe.`,
+  `Il faut faire davantage d'efforts pour participer et travailler dans de bonnes conditions.`
+ ]));
+ else if(c.participation==='negative') engagement.push(pick([
+  `${first} gagnerait à participer plus souvent et à prendre davantage part aux activités.`,
+  `Une participation plus active aiderait ${first} à progresser et à prendre confiance.`
+ ]));
+ else if(c.behavior==='positive') engagement.push(pick([
+  `${first} adopte une attitude sérieuse et agréable en classe.`,
+  `Son attitude en classe est positive et permet de travailler sereinement.`
+ ]));
+ else if(c.behavior==='negative') engagement.push(pick([
+  `Une attitude plus calme et attentive est attendue pour permettre à ${first} de mieux profiter du cours.`,
+  `${first} doit veiller à adopter une attitude plus adaptée au travail en classe.`
+ ]));
+ const work=[];
+ if(c.material==='positive'&&c.work==='positive') work.push(pick([
+  `Le matériel est toujours prêt et le travail personnel est régulier : c'est un vrai point fort.`,
+  `${first} arrive avec le matériel nécessaire et fournit un travail personnel sérieux.`
+ ]));
+ else if(c.material==='negative'&&c.work==='negative') work.push(pick([
+  `Il faut penser à apporter le matériel et fournir un travail personnel plus régulier.`,
+  `Les oublis de matériel et le manque de travail personnel freinent les progrès. Ces points doivent être améliorés.`
+ ]));
+ else if(c.material==='positive') work.push(pick([
+  `Le matériel est apporté régulièrement, ce qui permet de travailler dans de bonnes conditions.`,
+  `${first} pense à venir avec le matériel nécessaire. Il faut garder cette habitude.`
+ ]));
+ else if(c.material==='negative') work.push(pick([
+  `Les oublis de matériel sont encore trop fréquents et gênent le travail. Il faut y être plus attentif.`,
+  `${first} doit penser à apporter le matériel demandé à chaque séance.`
+ ]));
+ if(c.work==='positive'&&c.material!=='positive') work.push(`Le travail personnel est sérieux et mérite d'être poursuivi.`);
+ else if(c.work==='negative'&&c.material!=='negative') work.push(`Le travail personnel doit être plus régulier pour consolider les acquis.`);
+ const notes=d.notes.slice(-1).filter(Boolean);
+ let sentences=[opening,...engagement,...work];
+ if(notes.length)sentences.push(notes[0]);
+ if(d.avg!==null&&d.avg>=16)sentences.push(pick([`Félicitations, ${first} ! Continue ainsi.`,`Il faut poursuivre sur cette très belle dynamique.`]));
+ else if(d.avg!==null&&d.avg>=12)sentences.push(pick([`Il faut poursuivre dans cette voie.`,`Continue les efforts, ils portent leurs fruits.`,`Je t'encourage à continuer ainsi.`]));
+ else if(d.avg!==null)sentences.push(pick([`Je compte sur ${first} pour poursuivre ses efforts au prochain trimestre.`,`Il faut s'accrocher : les progrès viendront avec davantage de régularité.`]));
  if(len==='short')sentences=sentences.slice(0,Math.min(2,sentences.length));
  if(len==='medium'&&sentences.length>4)sentences=sentences.slice(0,4);
  return sentences.join(' ');
@@ -923,6 +955,25 @@ function gradePhotoNameRows(words,imageWidth,imageHeight){
   return {studentId:best.student.id,name:best.student.name,y:g.y,score:best.score,text};
  }).filter(Boolean).sort((a,b)=>a.y-b.y);
 }
+
+function inferRightmostTotalColumn(words,imageWidth,imageHeight){
+ const nums=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??0)>12)
+  .map(w=>({x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,text:String(w.text).trim(),value:gradeTotalNumber(w.text),confidence:Number(w.confidence??0)}))
+  .filter(w=>w.value!==null&&w.x>imageWidth*.42&&w.x<imageWidth*.99&&w.y>imageHeight*.18&&w.y<imageHeight*.96);
+ const cols=[];
+ for(const n of nums){
+  let c=cols.find(x=>Math.abs(x.x-n.x)<Math.max(18,imageWidth*.018));
+  if(!c){c={x:n.x,items:[]};cols.push(c)}
+  c.items.push(n);c.x=c.items.reduce((s,v)=>s+v.x,0)/c.items.length;
+ }
+ const viable=cols.filter(c=>c.items.length>=2).sort((a,b)=>a.x-b.x);
+ if(!viable.length)return null;
+ const right=viable[viable.length-1];
+ // A total is expected to be to the right of the criteria columns, not merely any numeric column.
+ if(right.x<imageWidth*.58 || (viable.length>1 && right.x-viable[viable.length-2].x<imageWidth*.035))return null;
+ return {x:right.x,count:right.items.length};
+}
+
 function gradeHeaderCenter(w){
  const raw=String(w.text||''),idx=raw.toLowerCase().lastIndexOf('total');
  if(idx<0||!w.bbox)return null;
@@ -1000,8 +1051,13 @@ async function parseGradeTableWords(words,rawText,file){
  const url=URL.createObjectURL(file);let imageWidth=0,imageHeight=0;
  try{const im=new Image();await new Promise((resolve,reject)=>{im.onload=resolve;im.onerror=reject;im.src=url});imageWidth=im.naturalWidth;imageHeight=im.naturalHeight}finally{URL.revokeObjectURL(url)}
  const headers=(words||[]).filter(w=>w.text&&w.bbox&&w.bbox.x0>imageWidth*.5&&gradeWordNorm(w.text).includes('total')).map(gradeHeaderCenter).filter(Number.isFinite);
- if(!headers.length){status.textContent='Je ne repère pas clairement l’en-tête TOTAL. Aucune note ne sera importée.';review.innerHTML=`<details><summary>Voir le texte reconnu</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
- const headerX=headers.sort((a,b)=>a-b)[Math.floor(headers.length/2)];
+ let headerX,headerMode='en-tête TOTAL';
+ if(headers.length)headerX=headers.sort((a,b)=>a-b)[Math.floor(headers.length/2)];
+ else{
+  const inferred=inferRightmostTotalColumn(words,imageWidth,imageHeight);
+  if(!inferred){status.textContent='Je ne repère ni en-tête TOTAL ni colonne numérique finale suffisamment nette. Aucune note ne sera importée.';review.innerHTML=`<p class="notice">La colonne finale n’a pas pu être identifiée avec assez de confiance. Vérifie le cadrage ou saisis les notes manuellement.</p><details><summary>Voir le texte reconnu</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
+  headerX=inferred.x;headerMode='colonne numérique finale détectée sans en-tête';
+ }
  const names=gradePhotoNameRows(words,imageWidth,imageHeight),totals=gradePhotoTotalCells(words,headerX,imageHeight);
  const groups=gradeSplitPhotoGroups(names,totals),matched=[],usedNames=new Set(),usedTotals=new Set();
  for(const group of groups){
@@ -1038,7 +1094,7 @@ async function parseGradeTableWords(words,rawText,file){
  const recognized=new Set(pendingPhotoGrades.map(x=>x.studentId));
  const missing=students.filter(s=>!recognized.has(s.id)).map(s=>s.name);
  const recovered=matched.filter(x=>x.method==='cellule recadrée').map(x=>x.name);
- review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) associé(s) à une ou plusieurs lignes sur ${students.length}. Les groupes du tableau sont traités séparément. Les passages multiples sont fusionnés en conservant le meilleur total. Les notes sans nom et les cellules non lues restent à vérifier.</p>${cards}<h3>Notes sans nom reconnu (${pendingUnassignedPhotoTotals.length})</h3>${unassigned||'<p class="muted">Aucune note sans nom.</p>'}<p class="muted">Cellules relues individuellement : ${esc(recovered.join(', ')||'aucune')}</p><p class="muted">Élèves sans ligne reconnue (${missing.length}) : ${esc(missing.join(', ')||'aucun')}</p><details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider les notes vérifiées</button>`;
+ review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) associé(s) à une ou plusieurs lignes sur ${students.length}. Mode de lecture : ${esc(headerMode)}. Les groupes du tableau sont traités séparément. Les passages multiples sont fusionnés en conservant le meilleur total. Les notes sans nom et les cellules non lues restent à vérifier. Si aucun total n'est inscrit, la note reste à compléter : aucun barème n'est supposé.</p>${cards}<h3>Notes sans nom reconnu (${pendingUnassignedPhotoTotals.length})</h3>${unassigned||'<p class="muted">Aucune note sans nom.</p>'}<p class="muted">Cellules relues individuellement : ${esc(recovered.join(', ')||'aucune')}</p><p class="muted">Élèves sans ligne reconnue (${missing.length}) : ${esc(missing.join(', ')||'aucun')}</p><details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider les notes vérifiées</button>`;
  status.textContent=pendingPhotoGrades.length||pendingUnassignedPhotoTotals.length?'Analyse terminée. Vérifie les notes et associe les lignes sans nom avant import.':'Aucune note fiable reconnue. Vérifie le cadrage de la photo.';
 }
 function confirmPhotoGradeImport(){
