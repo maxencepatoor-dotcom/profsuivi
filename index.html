@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.6 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.7 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -785,42 +785,35 @@ async function readGradePhoto(){
 }
 function gradeWordNorm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9,.-]/g,'').replace(',', '.').trim()}
 function gradeNum(v){let x=String(v||'').replace(',','.').replace(/[oO]/g,'0').replace(/[lI]/g,'1');if(!/^\d{1,2}(\.\d{1,2})?$/.test(x))return null;let n=Number(x);return n>=0&&n<=20?n:null}
-function gradeRowsFromWords(words){const a=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??80)>5).map(w=>({text:String(w.text).trim(),x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0,x0:w.bbox.x0,x1:w.bbox.x1})).filter(w=>w.text);a.sort((u,v)=>u.y-v.y||u.x-v.x);let rows=[];for(const w of a){let r=rows.find(r=>Math.abs(r.y-w.y)<Math.max(12,Math.min(r.h,w.h)*.9));if(!r){r={y:w.y,h:w.h,words:[]};rows.push(r)}r.words.push(w);r.y=r.words.reduce((n,x)=>n+x.y,0)/r.words.length;r.h=Math.max(r.h,w.h)}rows.forEach(r=>r.words.sort((u,v)=>u.x-v.x));return rows}
+function gradeRowsFromWords(words){const a=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??80)>5).map(w=>({text:String(w.text).trim(),x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0,x0:w.bbox.x0,x1:w.bbox.x1})).filter(w=>w.text);a.sort((u,v)=>u.y-v.y||u.x-v.x);let rows=[];for(const w of a){let r=rows.find(r=>Math.abs(r.y-w.y)<Math.max(9,Math.min(r.h,w.h)*.65));if(!r){r={y:w.y,h:w.h,words:[]};rows.push(r)}r.words.push(w);r.y=r.words.reduce((n,x)=>n+x.y,0)/r.words.length;r.h=Math.max(r.h,w.h)}rows.forEach(r=>r.words.sort((u,v)=>u.x-v.x));return rows}
 function parseGradeTableWords(words,rawText){
  const status=document.getElementById('gradePhotoStatus'),review=document.getElementById('gradePhotoReview'),students=cls()?.students||[],rows=gradeRowsFromWords(words);
- const aliases=[['paroles',/^(paroles?|articulation)$/],['hauteur',/^(hauteur|justesse)$/],['volume',/^(volume|intensite)$/],['note tenue',/^(note|tenue)$/],['total',/^(total|tot)$/]];
- let headerCandidates=[];
- for(const r of rows){const toks=r.words.map(w=>gradeWordNorm(w.text));let found={};for(let i=0;i<toks.length;i++){for(const [key,rex] of aliases){if(rex.test(toks[i])){let x=r.words[i].x;if(key==='note tenue'&&toks[i]==='tenue'&&i>0&&toks[i-1]==='note')x=(x+r.words[i-1].x)/2;if(key==='note tenue'&&toks[i]==='note'&&toks[i+1]==='tenue')x=(x+r.words[i+1].x)/2;found[key]=x}}}if(found.paroles&&found.hauteur&&found.volume&&(found['note tenue']||found.total))headerCandidates.push({y:r.y,found})}
- if(!headerCandidates.length){status.textContent='Je ne repère pas les en-têtes paroles / hauteur / volume / note tenue. Essaie une photo plus droite, sans couper le tableau.';review.innerHTML=`<details><summary>Texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
- const headers=['paroles','hauteur','volume','note tenue'];const centers={};headers.forEach(k=>centers[k]=headerCandidates.map(h=>h.found[k]).filter(Number.isFinite).sort((a,b)=>a-b)[0]);
- // Use the most complete header row to obtain stable horizontal cell centers.
- const best=headerCandidates.sort((a,b)=>Object.keys(b.found).length-Object.keys(a.found).length)[0];headers.forEach(k=>centers[k]=best.found[k]);
- centers.total=best.found.total??(best.found['note tenue']+Math.max(35,Math.abs(best.found.volume-best.found['note tenue'])*1.25));
- const xs=headers.map(k=>centers[k]);const bounds=[-Infinity,...xs.slice(0,-1).map((x,i)=>(x+xs[i+1])/2), (xs[3]+centers.total)/2,Infinity];
- const nameMatches=[];
- for(const r of rows){if(Math.abs(r.y-best.y)<25)continue;const rowText=r.words.map(w=>w.text).join(' '),norm=gradeWordNorm(rowText);let found=null,score=0;
+ const totalHeaders=[];
+ for(const r of rows){for(let i=0;i<r.words.length;i++){const t=gradeWordNorm(r.words[i].text);if(/^(total|tot)$/i.test(t))totalHeaders.push({y:r.y,x:r.words[i].x})}}
+ if(!totalHeaders.length){status.textContent='Je ne repère pas la colonne TOTAL. Vérifie que son en-tête est visible sur la photo.';review.innerHTML=`<details><summary>Texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
+ // L’en-tête TOTAL est le seul repère nécessaire : pour chaque ligne d’élève,
+ // la dernière valeur numérique de la ligne correspond à la note totale.
+ const header=totalHeaders.sort((a,b)=>a.y-b.y)[0],nameMatches=[];
+ for(const r of rows){
+  if(Math.abs(r.y-header.y)<25)continue;
+  const rowText=r.words.map(w=>w.text).join(' '),norm=gradeWordNorm(rowText);
+  let found=null,score=0;
   for(const st of students){const parts=String(st.name||'').split(/\s+/).map(gradeWordNorm).filter(x=>x.length>1);if(!parts.length)continue;const hits=parts.filter(t=>norm.includes(t)).length,sc=hits/parts.length;if(sc>score){score=sc;found=st}}
   if(!found||score<.99)continue;
-  const vals=[null,null,null,null];
-  const numericWords=r.words.map(w=>({w,v:gradeNum(w.text)})).filter(x=>x.v!==null).sort((a,b)=>a.w.x-b.w.x);
-  // In this sheet, the four criteria are followed by a TOTAL column.
-  // When OCR finds all four or five numeric cells, use their left-to-right order;
-  // this is more reliable than tight fixed pixel tolerances on a photographed, tilted screen.
-  if(numericWords.length===4||numericWords.length===5){
-    numericWords.slice(0,4).forEach((x,i)=>vals[i]=x.v);
-  } else {
-    numericWords.forEach(({w,v})=>{let j=0,dist=Infinity;headers.forEach((k,i)=>{const d=Math.abs(w.x-centers[k]);if(d<dist){dist=d;j=i}});const left=j===0?xs[0]-(xs[1]-xs[0])*.7:(xs[j-1]+xs[j])/2;const right=j===3?(xs[3]+centers.total)/2:(xs[j]+xs[j+1])/2;const tolerance=Math.max(42,(right-left)*.72);if(w.x>=left-tolerance*.25&&w.x<=right+tolerance*.25&&dist<=tolerance)vals[j]=vals[j]===null?v:Math.max(vals[j],v)});
-  }
-  if(vals.some(v=>v!==null))nameMatches.push({studentId:found.id,name:found.name,values:vals,line:rowText,y:r.y});
+  const numeric=r.words.map(w=>({x:w.x,v:gradeNum(w.text)})).filter(x=>x.v!==null).sort((a,b)=>a.x-b.x);
+  if(!numeric.length)continue;
+  const total=numeric[numeric.length-1].v;
+  if(total<0||total>20)continue;
+  nameMatches.push({studentId:found.id,name:found.name,total,line:rowText,y:r.y});
  }
- const merged={};nameMatches.forEach(e=>{const m=merged[e.studentId]||(merged[e.studentId]={studentId:e.studentId,name:e.name,values:[null,null,null,null],lines:[]});e.values.forEach((v,i)=>{if(v!==null)m.values[i]=m.values[i]===null?v:Math.max(m.values[i],v)});m.lines.push(e.line)});
- pendingPhotoGrades=Object.values(merged).map(e=>({...e,total:e.values.every(v=>v!==null)?e.values.reduce((a,b)=>a+b,0):null}));
- const unmatched=rows.filter(r=>r.words.some(w=>gradeNum(w.text)!==null)).length-nameMatches.length;
- const html=pendingPhotoGrades.map((e,i)=>`<div class="bulletin-card"><b>${esc(e.name)}</b><div class="muted">${e.lines.length>1?'Plusieurs passages : meilleure note retenue pour chaque critère.':'Un passage détecté.'}</div><div class="grid">${headers.map((k,j)=>`<div><label>${k}</label><input type="number" min="0" max="5" step="0.5" value="${e.values[j]??''}" data-photo-row="${i}" data-photo-col="${j}"></div>`).join('')}</div><p><b>Total recalculé : ${e.values.every(v=>v!==null)?e.values.reduce((a,b)=>a+b,0)+'/20':'incomplet — à vérifier'}</b></p></div>`).join('');
- review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) reconnu(s) sur ${students.length}. Les notes sont extraites par position dans les colonnes. Vérifie chaque ligne avant import.</p>${html}<details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider l’import des notes</button>`;
- status.textContent=pendingPhotoGrades.length?'Tableau analysé. Les passages multiples sont fusionnés en gardant la meilleure note par critère.':'Aucun élève avec notes n’a été reconnu. Vérifie la photo ou les noms de la classe.';
+ const merged={};
+ nameMatches.forEach(e=>{const m=merged[e.studentId]||(merged[e.studentId]={studentId:e.studentId,name:e.name,total:e.total,lines:[]});m.total=Math.max(m.total,e.total);m.lines.push(e.line)});
+ pendingPhotoGrades=Object.values(merged);
+ const cards=pendingPhotoGrades.map((e,i)=>`<div class="bulletin-card"><b>${esc(e.name)}</b><div class="muted">${e.lines.length>1?'Plusieurs passages détectés : meilleure note totale retenue.':'Un passage détecté.'}</div><label>Note totale sur 20</label><input type="number" min="0" max="20" step="0.5" value="${e.total}" data-photo-total-row="${i}"><p><b>Note retenue : ${e.total}/20</b></p></div>`).join('');
+ review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) reconnu(s) sur ${students.length}. Seule la colonne TOTAL est utilisée pour la note. Les passages multiples sont fusionnés en conservant le meilleur total.</p>${cards}<details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider l’import des notes</button>`;
+ status.textContent=pendingPhotoGrades.length?'Tableau analysé. Vérifie les notes totales avant import.':'Aucun élève avec note totale n’a été reconnu. Vérifie la photo ou les noms de la classe.';
 }
-function confirmPhotoGradeImport(){const c=cls();if(!c||!pendingPhotoGrades.length)return alert('Aucune note à importer.');const inputs=[...document.querySelectorAll('[data-photo-row]')],byRow={};inputs.forEach(el=>{const r=+el.dataset.photoRow,col=+el.dataset.photoCol;(byRow[r]||(byRow[r]=[]))[col]=el.value===''?null:Number(el.value)});const ready=pendingPhotoGrades.map((e,i)=>{const vals=byRow[i]||e.values;return {...e,values:vals,total:vals.every(v=>Number.isFinite(v))?vals.reduce((a,b)=>a+b,0):null}});const incomplete=ready.filter(e=>e.total===null);if(incomplete.length)return alert('Certaines lignes sont incomplètes. Renseigne les quatre critères avant de valider.');if(!confirm('Importer '+ready.length+' élève(s) ? Pour chaque élève présent plusieurs fois, la meilleure note de chaque critère est retenue. Le total est recalculé sur 20.'))return;const date=new Date().toISOString().slice(0,10);ready.forEach(e=>{const st=c.students.find(x=>x.id===e.studentId);if(!st)return;st.grades=st.grades||[];st.grades.push({value:e.total,title:'Évaluation vocale — import photo',date,source:'Photo',details:{paroles:e.values[0],hauteur:e.values[1],volume:e.values[2],noteTenue:e.values[3]}});st.photoSkillEvidence=st.photoSkillEvidence||[];st.photoSkillEvidence.push({criterion:'Interprétation vocale — paroles, hauteur, volume et note tenue',values:e.values,source:'Photo',date,programDomain:activeProgram().domains[0].id,reviewed:true})});save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' note(s) ajoutée(s). Les meilleures notes par critère ont été conservées.';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];renderRoster()}
+function confirmPhotoGradeImport(){const c=cls();if(!c||!pendingPhotoGrades.length)return alert('Aucune note à importer.');const inputs=[...document.querySelectorAll('[data-photo-total-row]')],byRow={};inputs.forEach(el=>{byRow[+el.dataset.photoTotalRow]=el.value===''?null:Number(el.value)});const ready=pendingPhotoGrades.map((e,i)=>({...e,total:byRow[i]??e.total}));const invalid=ready.filter(e=>!Number.isFinite(e.total)||e.total<0||e.total>20);if(invalid.length)return alert('Certaines notes totales sont absentes ou invalides. Corrige-les avant de valider.');if(!confirm('Importer '+ready.length+' élève(s) ? Seule la colonne TOTAL est prise en compte. Pour les élèves présents plusieurs fois, le meilleur total est conservé.'))return;const date=new Date().toISOString().slice(0,10);ready.forEach(e=>{const st=c.students.find(x=>x.id===e.studentId);if(!st)return;st.grades=st.grades||[];st.grades.push({value:e.total,title:'Évaluation — import photo (TOTAL)',date,source:'Photo',details:{total:e.total,method:'Colonne TOTAL uniquement'}})});save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' note(s) totale(s) ajoutée(s).';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];renderRoster()}
 
 </script>
 <script></script>
