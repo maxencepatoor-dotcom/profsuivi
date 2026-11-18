@@ -127,7 +127,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 
  <div class="panel">
   <h2>Trombinoscope automatique Pronote</h2>
-  <p class="muted">Importe une capture complète du trombinoscope. ProfSuivi repère les portraits sur fond vert, lit les noms avec l’OCR et prépare les associations. Tu vérifies avant d’enregistrer.</p>
+  <p class="muted">Importe une capture complète du trombinoscope. ProfSuivi repère chaque portrait, lit le nom et le prénom juste en dessous (même sur deux lignes), puis prépare les associations. Tu vérifies avant d’enregistrer.</p>
   <label>Capture ou image du trombinoscope</label>
   <input id="autoTrombiFile" type="file" accept="image/*">
   <button class="primary" style="width:100%;margin-top:8px" onclick="runAutoTrombi()">Détecter les portraits et les noms</button>
@@ -143,15 +143,8 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
    <div><label>Trimestre</label><select id="bulletinQuarter" onchange="loadQuarterSettings()"><option value="T1">Trimestre 1</option><option value="T2">Trimestre 2</option><option value="T3">Trimestre 3</option></select></div>
    <div><label>Longueur souhaitée</label><select id="bulletinLength"><option value="short">Courte</option><option value="medium" selected>Standard</option><option value="long">Détaillée</option></select></div>
   </div>
-  <h3 style="margin:12px 0 4px">Bilan global du trimestre</h3>
-  <p class="muted">Choisis les tendances générales de la classe. Elles serviront de base aux appréciations ; tu pourras ensuite ajuster chaque élève individuellement.</p>
-  <div class="grid">
-   <div><label>Participation</label><select id="globalParticipation"><option value="positive">Suffisante</option><option value="negative">Insuffisante</option><option value="neutral">À nuancer / non évaluée</option></select></div>
-   <div><label>Comportement</label><select id="globalBehavior"><option value="positive">Satisfaisant</option><option value="negative">Insatisfaisant</option><option value="neutral">À nuancer / non évalué</option></select></div>
-   <div><label>Matériel</label><select id="globalMaterial"><option value="positive">Apporté régulièrement</option><option value="negative">Oublis fréquents</option><option value="neutral">À nuancer / non évalué</option></select></div>
-   <div><label>Travail personnel</label><select id="globalWork"><option value="positive">Suffisant</option><option value="negative">Insuffisant</option><option value="neutral">À nuancer / non évalué</option></select></div>
-  </div>
-  <button style="width:100%;margin-top:8px" onclick="saveQuarterSettings()">Enregistrer le bilan global de ce trimestre</button>
+  <h3 style="margin:12px 0 4px">Préparation individuelle des bulletins</h3>
+  <p class="muted">Pour chaque élève, choisis son niveau en participation, comportement, matériel et travail personnel. Les critères sont indépendants pour chaque élève et chaque trimestre.</p>
   <button class="primary" style="width:100%;margin-top:8px" onclick="prepareClassBulletins()">Préparer les appréciations de la classe</button>
   <div id="bulletinEditor" style="margin-top:10px"></div>
   <div class="row" style="margin-top:8px">
@@ -469,6 +462,25 @@ function greenComponents(imageData,w,h){
 function canvasCrop(dataUrl,box,scale=1){
  return new Promise(resolve=>{let im=new Image();im.onload=()=>{let c=document.createElement('canvas'),ctx=c.getContext('2d');let pad=Math.round(box.w*.06),x=Math.max(0,box.x-pad),y=Math.max(0,box.y-pad),w=Math.min(im.width-x,box.w+pad*2),h=Math.min(im.height-y,box.h+pad*2);c.width=Math.round(w*scale);c.height=Math.round(h*scale);ctx.drawImage(im,x,y,w,h,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.82))};im.src=dataUrl});
 }
+
+function cropLabelArea(sourceCanvas,box,nextRowY){
+ const w=sourceCanvas.width,h=sourceCanvas.height;
+ const padX=Math.max(18,Math.round(box.w*.35));
+ const x=Math.max(0,Math.round(box.x-padX));
+ const right=Math.min(w,Math.round(box.x+box.w+padX));
+ const y=Math.min(h,Math.round(box.y+box.h+2));
+ // The caption belongs to this portrait: stop before the next row of portraits.
+ const maxBottom=Math.min(h,y+Math.max(42,Math.round(box.w*.95)));
+ const bottom=nextRowY==null?maxBottom:Math.min(maxBottom,Math.max(y+22,Math.round(nextRowY-4)));
+ const c=document.createElement('canvas'),ctx=c.getContext('2d');
+ c.width=Math.max(1,right-x);c.height=Math.max(1,bottom-y);
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+ ctx.drawImage(sourceCanvas,x,y,c.width,c.height,0,0,c.width,c.height);
+ // Enlarge small captions for OCR.
+ const up=document.createElement('canvas'),u=up.getContext('2d');
+ up.width=c.width*3;up.height=c.height*3;u.imageSmoothingEnabled=false;u.drawImage(c,0,0,up.width,up.height);
+ return up.toDataURL('image/png');
+}
 async function runAutoTrombi(){
  const file=document.getElementById('autoTrombiFile').files[0],status=document.getElementById('autoTrombiStatus'),preview=document.getElementById('autoTrombiPreview'),saveBtn=document.getElementById('autoTrombiSave');
  if(!file)return alert('Choisis une capture du trombinoscope.');
@@ -483,20 +495,27 @@ async function runAutoTrombi(){
   if(!boxes.length)throw new Error('Aucun portrait sur fond vert détecté. Vérifie que la capture est lisible et que les photos ont un fond suffisamment contrasté.');
   status.textContent=`${boxes.length} portrait(s) repéré(s). Chargement de la reconnaissance de texte…`;
   await loadScriptOnce('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
-  const worker=await Tesseract.createWorker('fra',1,{logger:m=>{if(m.status==='recognizing text')status.textContent='Lecture des noms… '+Math.round((m.progress||0)*100)+'%'}});
-  const ocr=await worker.recognize(dataUrl);await worker.terminate();
-  let lines=(ocr.data.lines||[]).map(l=>({text:l.text.trim(),y:(l.bbox.y0+l.bbox.y1)/2,x:(l.bbox.x0+l.bbox.x1)/2}));
-  const ordered=boxes.map((b,i)=>({b,i,centerX:(b.x+b.w/2)/scale,bottom:(b.y+b.h)/scale}));
+  const worker=await Tesseract.createWorker('fra',1,{logger:m=>{if(m.status==='recognizing text')status.textContent='Lecture des noms sous les portraits… '+Math.round((m.progress||0)*100)+'%'}});
+  await worker.setParameters({tessedit_pageseg_mode:'6'});
+  const ordered=boxes.map((b,i)=>({b,i})).sort((a,b)=>a.b.y-b.b.y||a.b.x-b.b.x);
   autoTrombiPending=[];
   for(let i=0;i<ordered.length;i++){
-   const item=ordered[i],next=ordered.filter(o=>o.b.y>item.b.y).sort((a,b)=>a.b.y-b.b.y)[0];
-   const rowLimit=next?Math.min(item.bottom+Math.max(100,im.width*.12),next.b.y/scale+Math.max(0,im.width*.02)):Math.min(im.height,item.bottom+Math.max(110,im.width*.14));
-   const nearby=lines.filter(l=>l.y>=item.bottom+2&&l.y<=rowLimit&&Math.abs(l.x-item.centerX)<Math.max(130,item.b.w/scale*.9)).sort((a,b)=>a.y-b.y);
-   const detected=nearby.map(l=>l.text).join(' ').replace(/\s+/g,' ').trim();
+   const item=ordered[i],b=item.b;
+   // Find the first lower row, not merely the next portrait in reading order.
+   const nextRow=ordered.filter(o=>o.b.y>b.y+Math.max(10,b.h*.55))
+     .sort((a,b)=>a.b.y-b.b.y)[0];
+   const labelData=cropLabelArea(canvas,b,nextRow?nextRow.b.y:null);
+   let detected='';
+   try{
+    const result=await worker.recognize(labelData);
+    detected=(result.data.text||'').replace(/\s+/g,' ').trim();
+   }catch(e){detected='';}
+   // If the caption crop is empty or OCR failed, leave the association for manual review.
    const match=matchStudentFromOCR(detected);
-   const crop=await canvasCrop(dataUrl,{x:item.b.x/scale,y:item.b.y/scale,w:item.b.w/scale,h:item.b.h/scale});
-   autoTrombiPending.push({photo:crop,text:detected,studentId:match?.id||'',box:item.b});
+   const crop=await canvasCrop(dataUrl,{x:b.x/scale,y:b.y/scale,w:b.w/scale,h:b.h/scale});
+   autoTrombiPending.push({photo:crop,text:detected,studentId:match?.id||'',box:b});
   }
+  await worker.terminate();
   preview.innerHTML=autoTrombiPending.map((p,i)=>`<div class="auto-match"><img src="${p.photo}" alt="Portrait ${i+1}"><div><b>Portrait ${i+1}</b><div class="muted">Texte lu : ${esc(p.text||'Aucun nom reconnu')}</div><select data-auto-index="${i}"><option value="">— À vérifier / sans association —</option>${cls().students.map(s=>`<option value="${s.id}" ${s.id===p.studentId?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div></div>`).join('');
   preview.querySelectorAll('select[data-auto-index]').forEach(sel=>sel.onchange=()=>autoTrombiPending[Number(sel.dataset.autoIndex)].studentId=sel.value);
   saveBtn.classList.remove('hidden');
@@ -518,45 +537,6 @@ function saveAutoTrombi(){
  save();renderRoster();document.getElementById('autoTrombiStatus').textContent=`${saved} portrait(s) enregistré(s). Les élèves non associés restent sans photo.`;document.getElementById('autoTrombiSave').classList.add('hidden');document.getElementById('autoTrombiPreview').innerHTML='';autoTrombiPending=[];
 }
 
-function quarterSettingsKey(){return 'bulletinQuarterSettings_'+currentClass+'_'+(document.getElementById('bulletinQuarter')?.value||'T1')}
-function defaultQuarterSettings(){return {participation:'positive',behavior:'positive',material:'positive',work:'positive'}}
-function loadQuarterSettings(){
- const saved=JSON.parse(localStorage.getItem(quarterSettingsKey())||'null')||defaultQuarterSettings();
- for(const [k,id] of Object.entries({participation:'globalParticipation',behavior:'globalBehavior',material:'globalMaterial',work:'globalWork'})){
-  const el=document.getElementById(id);if(el)el.value=saved[k]||'neutral';
- }
- const period=document.getElementById('bulletinPeriod');if(period)period.value=document.getElementById('bulletinQuarter').selectedOptions[0].text;
-}
-function saveQuarterSettings(){
- const settings={participation:document.getElementById('globalParticipation').value,behavior:document.getElementById('globalBehavior').value,material:document.getElementById('globalMaterial').value,work:document.getElementById('globalWork').value};
- localStorage.setItem(quarterSettingsKey(),JSON.stringify(settings));
- alert('Bilan global enregistré pour '+document.getElementById('bulletinQuarter').selectedOptions[0].text+'.');
-}
-function getQuarterSettings(){
- return JSON.parse(localStorage.getItem(quarterSettingsKey())||'null')||{
-  participation:document.getElementById('globalParticipation')?.value||'neutral',
-  behavior:document.getElementById('globalBehavior')?.value||'neutral',
-  material:document.getElementById('globalMaterial')?.value||'neutral',
-  work:document.getElementById('globalWork')?.value||'neutral'
- };
-}
-function quarterComment(settings){
- const parts=[];
- if(settings.participation==='positive')parts.push('La participation est suffisante et régulière.');
- if(settings.participation==='negative')parts.push('La participation reste insuffisante et doit être davantage investie.');
- if(settings.participation==='neutral')parts.push('La participation est à consolider.');
- if(settings.behavior==='positive')parts.push('Le comportement en classe est satisfaisant.');
- if(settings.behavior==='negative')parts.push('Le comportement en classe doit s’améliorer.');
- if(settings.behavior==='neutral')parts.push('L’attitude en classe reste à stabiliser.');
- if(settings.material==='positive')parts.push('Le matériel est apporté régulièrement.');
- if(settings.material==='negative')parts.push('Les oublis de matériel sont trop fréquents.');
- if(settings.material==='neutral')parts.push('La régularité concernant le matériel est à consolider.');
- if(settings.work==='positive')parts.push('Le travail personnel est suffisant.');
- if(settings.work==='negative')parts.push('Le travail personnel est insuffisant et doit être renforcé.');
- if(settings.work==='neutral')parts.push('Le travail personnel doit gagner en régularité.');
- return parts.join(' ');
-}
-
 function bulletinData(s){
  const numeric=(s.grades||[]).filter(g=>g.value!==null&&g.value!==''&&Number.isFinite(Number(g.value)));
  const avg=numeric.length?numeric.reduce((a,g)=>a+Number(g.value),0)/numeric.length:null;
@@ -565,30 +545,48 @@ function bulletinData(s){
  const notes=(s.notes||[]).map(n=>n.text).filter(Boolean);
  return {avg,part,count,notes,grades:numeric};
 }
+
+function studentBulletinCriteria(s){
+ const q=document.getElementById('bulletinQuarter')?.value||'T1';
+ s.bulletinCriteria=s.bulletinCriteria||{};
+ return s.bulletinCriteria[q]||(s.bulletinCriteria[q]={participation:'neutral',behavior:'neutral',material:'neutral',work:'neutral'});
+}
+function criteriaText(c){
+ const a=[];
+ if(c.participation==='positive')a.push('Participation satisfaisante.');
+ if(c.participation==='negative')a.push('La participation doit être plus active.');
+ if(c.behavior==='positive')a.push('Comportement satisfaisant en classe.');
+ if(c.behavior==='negative')a.push('Le comportement doit s’améliorer.');
+ if(c.material==='positive')a.push('Matériel apporté régulièrement.');
+ if(c.material==='negative')a.push('Les oublis de matériel sont trop fréquents.');
+ if(c.work==='positive')a.push('Travail personnel suffisant.');
+ if(c.work==='negative')a.push('Le travail personnel doit être approfondi.');
+ return a.join(' ');
+}
 function buildAppreciation(s){
- const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium';
- const global=quarterComment(getQuarterSettings());
- const positive=d.count('Participation +')+d.count('Comportement +'),negative=d.count('Perturbation')+d.count('Cahier oublié')+d.count('Travail non fait');
- let level=d.avg===null?'':d.avg>=15?'très satisfaisants':d.avg>=12?'satisfaisants':d.avg>=10?'corrects':'fragiles';
- let start=d.avg===null?'Les éléments évalués ne permettent pas encore d’établir un bilan chiffré.':`Les résultats sont ${level}${d.avg!==null?' ('+d.avg.toFixed(1).replace('.',',')+'/20)':''}.`;
- let participation=d.part.avg===null?'La participation n’a pas encore été suffisamment évaluée.':d.part.avg>=3.2?'La participation est active et régulière.':d.part.avg>=2?'La participation est convenable mais pourrait être plus régulière.':'La participation doit gagner en régularité et en engagement.';
- let behavior=negative===0?(positive>0?'L’attitude et l’investissement en classe sont positifs.':''):(`Des efforts sont attendus concernant ${[d.count('Perturbation')?'la concentration et le respect du cadre de travail':'',d.count('Cahier oublié')?'la présence du matériel':'',d.count('Travail non fait')?'la réalisation du travail demandé':''].filter(Boolean).join(', ')}.`);
- let obs=d.notes.length?`Observations : ${d.notes.slice(-3).join(' ; ')}.`:'';
- let text=[start,global,obs].filter(Boolean).join(' ');
+ const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',c=studentBulletinCriteria(s);
+ let start=d.avg===null?'Une seule note ou trop peu d’évaluations ce trimestre ne permettent pas de situer précisément le niveau.':d.avg>=16?'Excellent trimestre.':d.avg>=14?'Très bon trimestre.':d.avg>=12?'Bon trimestre.':d.avg>=10?'Ensemble satisfaisant.':'Résultats trop justes ce trimestre.';
+ let text=[start,criteriaText(c),d.notes.slice(-2).join(' ; ')].filter(Boolean).join(' ');
  if(len==='short')text=text.split(/(?<=[.!?])\s+/).slice(0,2).join(' ');
- if(len==='long'&&d.grades.length>1)text+=` Les résultats aux évaluations montrent ${d.avg>=12?'une bonne maîtrise des compétences travaillées':'des acquis à consolider'} ; il convient de poursuivre les efforts au prochain trimestre.`;
+ if(len==='long'&&d.grades.length>1)text+=' Il faut poursuivre les efforts.';
  return text;
 }
 function prepareClassBulletins(){
  const c=cls();if(!c)return;
- const qs={participation:document.getElementById('globalParticipation').value,behavior:document.getElementById('globalBehavior').value,material:document.getElementById('globalMaterial').value,work:document.getElementById('globalWork').value};localStorage.setItem(quarterSettingsKey(),JSON.stringify(qs));
- bulletinDrafts=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>({id:s.id,name:s.name,text:buildAppreciation(s)}));
+ const q=document.getElementById('bulletinQuarter')?.value||'T1';
+ bulletinDrafts=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>({id:s.id,name:s.name,text:buildAppreciation(s),criteria:{...studentBulletinCriteria(s)},quarter:q}));
  renderBulletinEditor();
 }
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
- box.innerHTML=bulletinDrafts.map((b,i)=>`<div class="bulletin-card"><b>${esc(b.name)}</b><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`).join('');
- box.querySelectorAll('textarea[data-bulletin]').forEach(t=>t.oninput=()=>bulletinDrafts[Number(t.dataset.bulletin)].text=t.value);
+ const opts=(v,pos,neg)=>`<option value="neutral" ${v==='neutral'?'selected':''}>À définir</option><option value="positive" ${v==='positive'?'selected':''}>${pos}</option><option value="negative" ${v==='negative'?'selected':''}>${neg}</option>`;
+ box.innerHTML=bulletinDrafts.map((b,i)=>`<div class="bulletin-card"><b>${esc(b.name)}</b><div class="grid" style="margin-top:8px"><div><label>Participation</label><select data-crit="participation" data-index="${i}">${opts(b.criteria.participation,'Suffisante','Insuffisante')}</select></div><div><label>Comportement</label><select data-crit="behavior" data-index="${i}">${opts(b.criteria.behavior,'Satisfaisant','Insatisfaisant')}</select></div><div><label>Matériel</label><select data-crit="material" data-index="${i}">${opts(b.criteria.material,'Apporté régulièrement','Oublis fréquents')}</select></div><div><label>Travail personnel</label><select data-crit="work" data-index="${i}">${opts(b.criteria.work,'Suffisant','Insuffisant')}</select></div></div><button class="small" onclick="regenerateBulletin(${i})">Actualiser l’appréciation</button><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`).join('');
+ box.querySelectorAll('select[data-crit]').forEach(el=>el.onchange=()=>{const b=bulletinDrafts[+el.dataset.index],s=cls().students.find(x=>x.id===b.id);b.criteria[el.dataset.crit]=el.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
+ box.querySelectorAll('textarea[data-bulletin]').forEach(t=>t.oninput=()=>bulletinDrafts[+t.dataset.bulletin].text=t.value);
+}
+function regenerateBulletin(i){
+ const b=bulletinDrafts[i],s=cls().students.find(x=>x.id===b.id);if(!s)return;
+ s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();b.text=buildAppreciation(s);renderBulletinEditor();
 }
 function printClassBulletins(){
  if(!bulletinDrafts.length)prepareClassBulletins();if(!bulletinDrafts.length)return;
@@ -615,5 +613,5 @@ document.getElementById('sessionNo').addEventListener('change',()=>{document.get
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 renderClasses();go('classes');
 </script>
-<script>document.addEventListener('DOMContentLoaded',()=>{try{loadQuarterSettings()}catch(e){}});</script>
+<script></script>
 </body></html>
