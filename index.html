@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.4 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.6 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -632,25 +632,46 @@ function studentBulletinCriteria(s){
  s.bulletinCriteria=s.bulletinCriteria||{};
  return s.bulletinCriteria[q]||(s.bulletinCriteria[q]={participation:'neutral',behavior:'neutral',material:'neutral',work:'neutral'});
 }
-function criteriaText(c){
- const a=[];
- if(c.participation==='positive')a.push('Participation satisfaisante.');
- if(c.participation==='negative')a.push('La participation doit être plus active.');
- if(c.behavior==='positive')a.push('Comportement satisfaisant en classe.');
- if(c.behavior==='negative')a.push('Le comportement doit s’améliorer.');
- if(c.material==='positive')a.push('Matériel apporté régulièrement.');
- if(c.material==='negative')a.push('Les oublis de matériel sont trop fréquents.');
- if(c.work==='positive')a.push('Travail personnel suffisant.');
- if(c.work==='negative')a.push('Le travail personnel doit être approfondi.');
- return a.join(' ');
+
+function bulletinFirstName(s){
+ if(s.firstName)return String(s.firstName).trim();
+ const raw=String(s.name||'').trim();
+ if(!raw)return 'L’élève';
+ const parts=raw.split(/\s+/);
+ // ProfSuivi imports commonly store "NOM Prénom"; use the final token as the first name.
+ return parts.length>1?parts[parts.length-1]:parts[0];
+}
+function criteriaText(c,first){
+ const phrases=[];
+ if(c.participation==='positive')phrases.push(`${first} participe avec sérieux et prend sa place dans les activités.`);
+ if(c.participation==='negative')phrases.push(`${first} doit davantage prendre part aux activités et oser participer.`);
+ if(c.behavior==='positive')phrases.push(`Son attitude en classe est sérieuse et contribue au bon déroulement du cours.`);
+ if(c.behavior==='negative')phrases.push(`Une attitude plus attentive et respectueuse est attendue pour travailler dans de bonnes conditions.`);
+ if(c.material==='positive')phrases.push(`${first} vient régulièrement avec le matériel nécessaire, ce qui lui permet de travailler dans de bonnes conditions.`);
+ if(c.material==='negative')phrases.push(`Les oublis de matériel sont encore trop fréquents et gênent son travail.`);
+ if(c.work==='positive')phrases.push(`Le travail personnel est régulier et permet de consolider les apprentissages.`);
+ if(c.work==='negative')phrases.push(`Le travail personnel reste à approfondir pour consolider les apprentissages.`);
+ return phrases;
 }
 function buildAppreciation(s){
- const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',c=studentBulletinCriteria(s);
- let start=d.avg===null?'Une seule note ou trop peu d’évaluations ce trimestre ne permettent pas de situer précisément le niveau.':d.avg>=16?'Excellent trimestre.':d.avg>=14?'Très bon trimestre.':d.avg>=12?'Bon trimestre.':d.avg>=10?'Ensemble satisfaisant.':'Résultats trop justes ce trimestre.';
- let text=[start,criteriaText(c),d.notes.slice(-2).join(' ; ')].filter(Boolean).join(' ');
- if(len==='short')text=text.split(/(?<=[.!?])\s+/).slice(0,2).join(' ');
- if(len==='long'&&d.grades.length>1)text+=' Il faut poursuivre les efforts.';
- return text;
+ const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',c=studentBulletinCriteria(s),first=bulletinFirstName(s);
+ let opening;
+ if(d.avg===null)opening=`${first}, le peu d’évaluations réalisées ce trimestre ne permet pas encore de situer précisément ton niveau.`;
+ else if(d.avg>=16)opening=`${first} réalise un excellent trimestre, avec des résultats très solides.`;
+ else if(d.avg>=14)opening=`${first} réalise un très bon trimestre et montre une bonne maîtrise des activités proposées.`;
+ else if(d.avg>=12)opening=`${first} réalise un bon trimestre. Les résultats sont satisfaisants et les acquis sont encourageants.`;
+ else if(d.avg>=10)opening=`${first} obtient des résultats convenables, mais doit poursuivre ses efforts pour progresser.`;
+ else opening=`${first} rencontre encore des difficultés ce trimestre. Les résultats restent fragiles et demandent davantage de travail.`;
+ const details=criteriaText(c,first);
+ const observations=d.notes.slice(-2).filter(Boolean);
+ let text=[opening,...details];
+ if(observations.length)text.push(`À retenir également : ${observations.join(' ; ')}.`);
+ if(len==='short')text=text.slice(0,2);
+ if(len==='long'&&d.grades.length>1){
+  if(d.avg!==null&&d.avg>=12)text.push(`${first} doit poursuivre dans cette voie pour maintenir ces acquis.`);
+  else text.push(`Un investissement plus régulier aidera ${first} à progresser au prochain trimestre.`);
+ }
+ return text.join(' ');
 }
 function prepareClassBulletins(){
  const c=cls();if(!c)return;
@@ -764,7 +785,7 @@ async function readGradePhoto(){
 }
 function gradeWordNorm(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9,.-]/g,'').replace(',', '.').trim()}
 function gradeNum(v){let x=String(v||'').replace(',','.').replace(/[oO]/g,'0').replace(/[lI]/g,'1');if(!/^\d{1,2}(\.\d{1,2})?$/.test(x))return null;let n=Number(x);return n>=0&&n<=20?n:null}
-function gradeRowsFromWords(words){const a=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??80)>5).map(w=>({text:String(w.text).trim(),x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0,x0:w.bbox.x0,x1:w.bbox.x1})).filter(w=>w.text);a.sort((u,v)=>u.y-v.y||u.x-v.x);let rows=[];for(const w of a){let r=rows.find(r=>Math.abs(r.y-w.y)<Math.max(9,Math.min(r.h,w.h)*.65));if(!r){r={y:w.y,h:w.h,words:[]};rows.push(r)}r.words.push(w);r.y=r.words.reduce((n,x)=>n+x.y,0)/r.words.length;r.h=Math.max(r.h,w.h)}rows.forEach(r=>r.words.sort((u,v)=>u.x-v.x));return rows}
+function gradeRowsFromWords(words){const a=(words||[]).filter(w=>w.text&&w.bbox&&Number(w.confidence??80)>5).map(w=>({text:String(w.text).trim(),x:(w.bbox.x0+w.bbox.x1)/2,y:(w.bbox.y0+w.bbox.y1)/2,h:w.bbox.y1-w.bbox.y0,x0:w.bbox.x0,x1:w.bbox.x1})).filter(w=>w.text);a.sort((u,v)=>u.y-v.y||u.x-v.x);let rows=[];for(const w of a){let r=rows.find(r=>Math.abs(r.y-w.y)<Math.max(12,Math.min(r.h,w.h)*.9));if(!r){r={y:w.y,h:w.h,words:[]};rows.push(r)}r.words.push(w);r.y=r.words.reduce((n,x)=>n+x.y,0)/r.words.length;r.h=Math.max(r.h,w.h)}rows.forEach(r=>r.words.sort((u,v)=>u.x-v.x));return rows}
 function parseGradeTableWords(words,rawText){
  const status=document.getElementById('gradePhotoStatus'),review=document.getElementById('gradePhotoReview'),students=cls()?.students||[],rows=gradeRowsFromWords(words);
  const aliases=[['paroles',/^(paroles?|articulation)$/],['hauteur',/^(hauteur|justesse)$/],['volume',/^(volume|intensite)$/],['note tenue',/^(note|tenue)$/],['total',/^(total|tot)$/]];
@@ -781,7 +802,15 @@ function parseGradeTableWords(words,rawText){
   for(const st of students){const parts=String(st.name||'').split(/\s+/).map(gradeWordNorm).filter(x=>x.length>1);if(!parts.length)continue;const hits=parts.filter(t=>norm.includes(t)).length,sc=hits/parts.length;if(sc>score){score=sc;found=st}}
   if(!found||score<.99)continue;
   const vals=[null,null,null,null];
-  r.words.forEach(w=>{const v=gradeNum(w.text);if(v===null)return;let j=0,dist=Infinity;headers.forEach((k,i)=>{const d=Math.abs(w.x-centers[k]);if(d<dist){dist=d;j=i}});const tolerance=Math.max(23,Math.abs(xs[Math.min(j+1,3)]-xs[j])*.52);if(dist<=tolerance)vals[j]=vals[j]===null?v:Math.max(vals[j],v)});
+  const numericWords=r.words.map(w=>({w,v:gradeNum(w.text)})).filter(x=>x.v!==null).sort((a,b)=>a.w.x-b.w.x);
+  // In this sheet, the four criteria are followed by a TOTAL column.
+  // When OCR finds all four or five numeric cells, use their left-to-right order;
+  // this is more reliable than tight fixed pixel tolerances on a photographed, tilted screen.
+  if(numericWords.length===4||numericWords.length===5){
+    numericWords.slice(0,4).forEach((x,i)=>vals[i]=x.v);
+  } else {
+    numericWords.forEach(({w,v})=>{let j=0,dist=Infinity;headers.forEach((k,i)=>{const d=Math.abs(w.x-centers[k]);if(d<dist){dist=d;j=i}});const left=j===0?xs[0]-(xs[1]-xs[0])*.7:(xs[j-1]+xs[j])/2;const right=j===3?(xs[3]+centers.total)/2:(xs[j]+xs[j+1])/2;const tolerance=Math.max(42,(right-left)*.72);if(w.x>=left-tolerance*.25&&w.x<=right+tolerance*.25&&dist<=tolerance)vals[j]=vals[j]===null?v:Math.max(vals[j],v)});
+  }
   if(vals.some(v=>v!==null))nameMatches.push({studentId:found.id,name:found.name,values:vals,line:rowText,y:r.y});
  }
  const merged={};nameMatches.forEach(e=>{const m=merged[e.studentId]||(merged[e.studentId]={studentId:e.studentId,name:e.name,values:[null,null,null,null],lines:[]});e.values.forEach((v,i)=>{if(v!==null)m.values[i]=m.values[i]===null?v:Math.max(m.values[i],v)});m.lines.push(e.line)});
