@@ -74,12 +74,35 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 .import-details summary{font-weight:750;cursor:pointer;padding:5px 0}
 .class-empty{padding:20px;text-align:center;color:var(--muted)}
 @media(min-width:650px){.class-toolbar{grid-template-columns:2fr 1fr auto}.class-search{grid-column:auto}.class-actions{grid-template-columns:repeat(3,1fr)}}
-.grade-photo-preview{display:block;max-width:100%;max-height:260px;object-fit:contain;margin:8px auto;border-radius:10px;border:1px solid var(--line)}.grade-photo-quality{padding:10px;border-radius:10px;margin-top:8px}.grade-photo-quality.good{background:#e8f6ed;color:#17633a}.grade-photo-quality.warn{background:#fff3d9;color:#805300}.grade-photo-quality.bad{background:#fde8e7;color:#8d2520}</style>
+.grade-photo-preview{display:block;max-width:100%;max-height:260px;object-fit:contain;margin:8px auto;border-radius:10px;border:1px solid var(--line)}.grade-photo-quality{padding:10px;border-radius:10px;margin-top:8px}.grade-photo-quality.good{background:#e8f6ed;color:#17633a}.grade-photo-quality.warn{background:#fff3d9;color:#805300}.grade-photo-quality.bad{background:#fde8e7;color:#8d2520}
+:root{--navy:#101d42;--blue:#315ee8;--bg:#f4f6fc;--ink:#172033;--muted:#66748b;--line:#e3e8f2;--green:#16845b;--red:#c24141;--amber:#b7791f;--surface:#fff;--shadow:0 8px 24px rgba(21,39,79,.055)}
+body{background:radial-gradient(ellipse at 90% 0%,#e8edff 0,transparent 34%),var(--bg);font-size:15px;letter-spacing:.005em}
+header{background:linear-gradient(118deg,#101d42 0%,#1c3471 58%,#294da7 100%);padding:calc(15px + env(safe-area-inset-top)) 17px 17px;box-shadow:0 8px 24px #101d4226}
+.headrow{align-items:center}.brandlock{display:flex;align-items:center;gap:11px}.brandmark{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#6e91ff,#315ee8);display:grid;place-items:center;box-shadow:inset 0 1px 0 #ffffff66,0 5px 14px #07153855}.brandmark svg{width:24px;height:24px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.brandtitle{font-size:21px;font-weight:850;letter-spacing:-.04em}.brandmeta{display:flex;align-items:center;gap:7px;margin-top:3px;flex-wrap:wrap}.version-tag{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:#ffffff20;border:1px solid #ffffff30;border-radius:20px;padding:3px 7px;color:#e8efff}
+main{padding:16px;max-width:880px}.panel{border:1px solid #e5eaf4;border-radius:19px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);background:rgba(255,255,255,.96)}
+h2{display:flex;align-items:center;gap:9px;font-size:17px;letter-spacing:-.025em;font-weight:800}h2 .heading-icon{width:31px;height:31px;display:inline-grid;place-items:center;border-radius:10px;background:#edf2ff;color:#315ee8;flex:0 0 auto}h2 .heading-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+button{border-radius:12px;transition:transform .12s,box-shadow .12s,background .12s}button.primary{background:linear-gradient(135deg,#416cf2,#2854dc);box-shadow:0 5px 12px #315ee82b}button.dark{background:linear-gradient(135deg,#172b5d,#101d42)}button:active{transform:scale(.975)}
+input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}input:focus,select:focus,textarea:focus{outline:3px solid #315ee822;border-color:#6e91ff}
+.tabs{gap:8px}.tab{border-radius:12px}.tab.active{background:#172b5d;box-shadow:0 4px 10px #172b5d24}
+.student,.class-card,.bulletin-card{border-radius:16px;border-color:#e3e9f3;box-shadow:0 3px 12px #172b5d08}
+.class-card{padding:15px!important;margin:11px 0!important}.class-card-title{font-weight:800;letter-spacing:-.02em}.class-actions button{border-radius:10px}
+.statsgrid{gap:9px}.statbox{background:linear-gradient(145deg,#f5f7ff,#edf2ff);border:1px solid #e6ebfa;border-radius:13px;padding:11px 7px}.statbox b{color:#244bc2;font-size:21px}.statbox span{font-size:11px;color:#62708a}
+.bottom{background:rgba(255,255,255,.96);backdrop-filter:blur(16px);border-top:1px solid #e4e9f2;box-shadow:0 -7px 22px #14244a0a;padding:7px 10px calc(7px + env(safe-area-inset-bottom))}.bottominner{gap:7px}.bottom button{border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;font-size:11px;font-weight:750;color:#68758b}.bottom button.active{background:#edf2ff;color:#2854dc}.nav-icon{width:20px;height:20px;display:block}.nav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}.hud-tile{background:linear-gradient(145deg,#fff,#f7f9ff);border:1px solid #e2e8f4;border-radius:16px;padding:12px;box-shadow:0 4px 14px #1d32600a;min-width:0}.hud-top{display:flex;align-items:center;justify-content:space-between;gap:6px}.hud-icon{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:#edf2ff;color:#315ee8}.hud-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.hud-value{font-size:23px;font-weight:850;letter-spacing:-.04em;margin-top:8px;color:#172b5d}.hud-label{font-size:11px;color:#6b7890;font-weight:650;margin-top:1px}.hud-caption{font-size:10px;color:#98a3b5;margin-top:4px}
+.section-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8794aa;font-weight:800;margin:0 0 8px 2px}.bottom button:focus-visible,button:focus-visible{outline:3px solid #7c9aff;outline-offset:2px}
+@media(max-width:390px){.hud{gap:6px}.hud-tile{padding:9px}.hud-value{font-size:20px}.hud-label{font-size:10px}.brandtitle{font-size:19px}}
+</style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V7.2.1 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V7.3.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="classesView">
+ <div class="section-kicker">Vue d’ensemble</div>
+ <div class="hud" aria-label="Indicateurs de suivi">
+  <div class="hud-tile"><div class="hud-top"><span class="hud-icon" data-icon="classes"></span><span class="muted">Organisation</span></div><div class="hud-value" id="hudClasses">0</div><div class="hud-label">Classes suivies</div><div class="hud-caption">Tes groupes</div></div>
+  <div class="hud-tile"><div class="hud-top"><span class="hud-icon" data-icon="users"></span><span class="muted">Effectif</span></div><div class="hud-value" id="hudStudents">0</div><div class="hud-label">Élèves enregistrés</div><div class="hud-caption">Toutes classes confondues</div></div>
+  <div class="hud-tile"><div class="hud-top"><span class="hud-icon" data-icon="camera"></span><span class="muted">Photos</span></div><div class="hud-value" id="hudPhotos">0</div><div class="hud-label">Portraits disponibles</div><div class="hud-caption">Trombinoscope automatique</div></div>
+ </div>
  <div class="panel">
   <div class="row between"><div><h2>Mes classes</h2><div class="muted" id="classSummary"></div></div><button class="primary small" onclick="toggleAddClass()">+ Ajouter</button></div>
   <div id="addClassForm" class="class-add-form hidden"><input id="newClassName" placeholder="Ex. 5e A" maxlength="40"><button class="primary" onclick="createClassFromForm()">Créer</button></div>
@@ -194,9 +217,9 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </section>
 </main>
 <nav class="bottom"><div class="bottominner">
-<button id="navClasses" class="active" onclick="go('classes')">Classes</button>
-<button id="navRoster" onclick="go('roster')">Élèves</button>
-<button id="navSettings" onclick="go('settings')">Sauvegarde</button>
+<button id="navClasses" class="active" onclick="go('classes')"><span class="nav-icon" data-icon="classes"></span><span>Classes</span></button>
+<button id="navRoster" onclick="go('roster')"><span class="nav-icon" data-icon="users"></span><span>Élèves</span></button>
+<button id="navSettings" onclick="go('settings')"><span class="nav-icon" data-icon="settings"></span><span>Sauvegarde</span></button>
 </div></nav>
 <script>
 const KEY='profsuivi_solo_v4';
@@ -205,9 +228,13 @@ function load(){try{return JSON.parse(localStorage.getItem(KEY))||{classes:[]}}c
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+const UI_ICONS={classes:'<rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/>',users:'<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',settings:'<circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2Z"/>',camera:'<path d="M14 4h-4L8.5 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5L14 4Z"/><circle cx="12" cy="13" r="3.5"/>',book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h8M8 10h8"/>',chart:'<path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 6-7"/>',clipboard:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5h6V2H9zM8 10h8M8 14h8M8 18h5"/>'};
+function uiIcon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true">${UI_ICONS[name]||UI_ICONS.book}</svg>`}
+function decorateDashboard(){document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=uiIcon(el.dataset.icon)});document.querySelectorAll('h2').forEach(el=>{if(el.querySelector('.heading-icon'))return;const t=el.textContent.toLowerCase();let k=t.includes('classe')?'classes':t.includes('élève')?'users':t.includes('séance')||t.includes('évaluation')?'chart':t.includes('bulletin')||t.includes('appréciation')?'clipboard':t.includes('sauvegarde')?'settings':t.includes('historique')?'book':null;if(k){const s=document.createElement('span');s.className='heading-icon';s.innerHTML=uiIcon(k);el.prepend(s)}})}
 function cls(){return db.classes.find(c=>c.id===currentClass)}
 function student(){return cls()?.students.find(s=>s.id===currentStudent)}
-function go(p){page=p;['classes','roster','student','settings'].forEach(x=>document.getElementById(x+'View').classList.toggle('hidden',x!==p));['Classes','Roster','Settings'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='settings'){}}
+function go(p){page=p;['classes','roster','student','settings'].forEach(x=>document.getElementById(x+'View').classList.toggle('hidden',x!==p));['Classes','Roster','Settings'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='settings'){}decorateDashboard()}
 function toggleAddClass(){let f=document.getElementById('addClassForm');f.classList.toggle('hidden');if(!f.classList.contains('hidden'))document.getElementById('newClassName').focus()}
 function createClassFromForm(){let input=document.getElementById('newClassName'),n=input.value.trim();if(!n)return alert('Saisis le nom de la classe.');if(db.classes.some(c=>c.name.toLowerCase()===n.toLowerCase()))return alert('Cette classe existe déjà.');db.classes.push({id:uid(),name:n,students:[]});save();input.value='';document.getElementById('addClassForm').classList.add('hidden');renderClasses()}
 function newClass(){toggleAddClass()}
@@ -221,6 +248,8 @@ function renderClasses(){
  else if(sort==='recent')arr=arr.slice().reverse();
  else arr.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
  const total=db.classes.length,students=db.classes.reduce((n,c)=>n+c.students.length,0);
+ const photos=db.classes.reduce((n,c)=>n+c.students.filter(s=>s.photo).length,0);
+ document.getElementById('hudClasses').textContent=total;document.getElementById('hudStudents').textContent=students;document.getElementById('hudPhotos').textContent=photos;
  document.getElementById('classSummary').textContent=`${total} classe(s) · ${students} élève(s) au total`;
  el.innerHTML=arr.length?'':'<div class="class-empty">'+(q?'Aucune classe ne correspond à cette recherche.':'Aucune classe pour le moment. Ajoute ta première classe.')+'</div>';
  arr.forEach(c=>{
@@ -669,92 +698,103 @@ function bulletinSentenceBank(s,c,first,variant){
  return bank;
 }
 function buildAppreciation(s,variant=0){
- const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium',
- c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
+ const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium';
+ const c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
  const pick=a=>a[v%a.length];
- let opening;
- if(d.avg===null) opening=pick([
-  `Les évaluations sont encore trop peu nombreuses pour situer précisément le niveau de ${first}. Il faudra profiter des prochaines activités pour montrer ce dont ${first} est capable.`,
-  `Le bilan de ${first} reste difficile à établir, car nous avons encore peu d'évaluations. J'attends de voir davantage son travail lors du prochain trimestre.`
- ]);
- else if(d.avg>=16) opening=pick([
-  `Excellent trimestre pour ${first} ! ${first} fournit un travail de grande qualité et montre une très bonne maîtrise des activités.`,
-  `Très beau trimestre pour ${first}, qui obtient d'excellents résultats. Son sérieux lui permet de réussir avec régularité.`,
-  `${first} réalise un excellent trimestre. Les résultats sont très solides et le travail fourni mérite d'être souligné.`
- ]);
- else if(d.avg>=14) opening=pick([
-  `Très bon trimestre pour ${first} ! Les résultats sont solides et montrent un travail sérieux.`,
-  `${first} réalise un très bon trimestre. Le travail est bien mené et les résultats sont au rendez-vous.`,
-  `Un trimestre très satisfaisant pour ${first}, qui progresse dans les activités et obtient de bons résultats.`
- ]);
- else if(d.avg>=12) opening=pick([
-  `Le trimestre de ${first} est satisfaisant. Les résultats sont encourageants et les acquis se consolident.`,
-  `${first} réalise un trimestre plutôt positif. Il faut continuer à s'investir pour gagner encore en assurance.`,
-  `Un bilan satisfaisant pour ${first}, même si certains points méritent encore d'être travaillés.`
- ]);
- else if(d.avg>=10) opening=pick([
-  `Le trimestre de ${first} reste un peu juste. Des efforts sont visibles, mais il faut gagner en régularité pour progresser.`,
-  `${first} obtient des résultats encore fragiles. Avec davantage de constance et d'implication, des progrès sont possibles.`,
-  `Le bilan est mitigé pour ${first}. Il faut poursuivre les efforts et s'investir davantage dans les activités.`
- ]);
- else opening=pick([
-  `Le trimestre de ${first} est difficile et les résultats restent insuffisants. Il est important de reprendre les notions et de s'impliquer davantage.`,
-  `${first} rencontre encore des difficultés. Un travail plus régulier et une participation plus active sont nécessaires pour progresser.`,
-  `Les résultats de ${first} sont trop fragiles ce trimestre. Il faut réagir et fournir des efforts plus réguliers.`
- ]);
- const engagement=[];
- if(c.participation==='positive'&&c.behavior==='positive') engagement.push(pick([
-  `En classe, ${first} participe volontiers et adopte une attitude très positive.`,
-  `${first} se montre volontaire, attentif et agréable dans le travail collectif.`,
-  `Sa participation et son attitude en classe contribuent à une bonne dynamique de travail.`
+ const sentences=[];
+ // Start with an overall assessment grounded in the available results.
+ if(d.avg===null){
+  sentences.push(pick([
+   `Le bilan de ${first} reste encore difficile à établir, car nous disposons de trop peu d'évaluations. Les prochaines activités permettront de mieux apprécier les acquis.`,
+   `Il est encore un peu tôt pour situer précisément le niveau de ${first}. Il faudra profiter des prochaines évaluations pour montrer les progrès réalisés.`,
+   `Avec peu de notes ce trimestre, le niveau de ${first} reste à préciser. Les prochaines séances permettront de faire un bilan plus juste.`
+  ]));
+ }else if(d.avg>=16){
+  sentences.push(pick([
+   `Excellent trimestre pour ${first} ! Les résultats sont très solides et montrent une très bonne maîtrise des activités.`,
+   `${first} réalise un excellent trimestre. Le travail présenté est de grande qualité et les résultats le confirment.`,
+   `Un excellent bilan pour ${first}, avec des résultats réguliers et une très bonne réussite dans les activités proposées.`
+  ]));
+ }else if(d.avg>=14){
+  sentences.push(pick([
+   `Très bon trimestre pour ${first}. Les résultats sont solides et le travail fourni permet de progresser avec régularité.`,
+   `${first} réalise un très bon trimestre. Les acquis sont bien installés et les résultats sont tout à fait satisfaisants.`,
+   `Le bilan de ${first} est très positif : les résultats sont bons et le travail permet d'avancer dans les apprentissages.`
+  ]));
+ }else if(d.avg>=12){
+  sentences.push(pick([
+   `${first} réalise un trimestre satisfaisant. Les résultats sont encourageants et les acquis progressent.`,
+   `Le trimestre de ${first} est plutôt positif. Le travail réalisé permet de consolider progressivement les acquis.`,
+   `${first} obtient un bilan satisfaisant. Plusieurs réussites sont à souligner et les efforts doivent se poursuivre.`
+  ]));
+ }else if(d.avg>=10){
+  sentences.push(pick([
+   `Le bilan de ${first} reste fragile. Les résultats montrent que certains points doivent encore être travaillés.`,
+   `${first} rencontre encore quelques difficultés. Des efforts plus réguliers aideront à consolider les acquis.`,
+   `Le trimestre est mitigé pour ${first}. Les bases sont présentes, mais il faut gagner en régularité pour progresser.`
+  ]));
+ }else{
+  sentences.push(pick([
+   `Le trimestre de ${first} est difficile et les résultats restent insuffisants. Il faut reprendre les points qui posent problème et s'investir davantage.`,
+   `${first} éprouve encore des difficultés dans les activités. Un travail plus régulier sera nécessaire pour retrouver une dynamique positive.`,
+   `Les résultats de ${first} sont trop fragiles ce trimestre. Il est important de se mobiliser davantage pour progresser.`
+  ]));
+ }
+ // Only describe attitudes and habits that have actually been selected by the teacher.
+ const details=[];
+ if(c.participation==='positive')details.push(pick([
+  `La participation est régulière et les interventions sont appréciées.`,
+  `La prise de part aux activités est spontanée et contribue au bon déroulement du cours.`,
+  `L'implication dans les activités et la participation sont de vrais points forts.`
  ]));
- else if(c.participation==='positive') engagement.push(pick([
-  `${first} participe volontiers et prend part aux activités proposées.`,
-  `La participation de ${first} est appréciée et montre une réelle envie de s'impliquer.`
+ else if(c.participation==='negative')details.push(pick([
+  `Il faudrait participer davantage et prendre une part plus active aux activités.`,
+  `Une participation plus régulière permettrait de profiter pleinement des séances.`,
+  `Il reste à oser davantage participer et à s'impliquer plus régulièrement.`
  ]));
- else if(c.participation==='negative'&&c.behavior==='negative') engagement.push(pick([
-  `${first} doit encore apprendre à s'impliquer davantage et à adopter une attitude plus attentive en classe.`,
-  `Il faut faire davantage d'efforts pour participer et travailler dans de bonnes conditions.`
+ if(c.behavior==='positive')details.push(pick([
+  `L'attitude en classe est sérieuse et agréable.`,
+  `Le comportement est positif et permet de travailler dans de bonnes conditions.`,
+  `Le sérieux et l'attitude en classe sont appréciés.`
  ]));
- else if(c.participation==='negative') engagement.push(pick([
-  `${first} gagnerait à participer plus souvent et à prendre davantage part aux activités.`,
-  `Une participation plus active aiderait ${first} à progresser et à prendre confiance.`
+ else if(c.behavior==='negative')details.push(pick([
+  `Il faudra veiller à adopter une attitude plus calme et attentive en classe.`,
+  `Une attitude plus adaptée au travail est attendue pour progresser dans de bonnes conditions.`,
+  `Davantage de calme et d'attention sont nécessaires pendant les séances.`
  ]));
- else if(c.behavior==='positive') engagement.push(pick([
-  `${first} adopte une attitude sérieuse et agréable en classe.`,
-  `Son attitude en classe est positive et permet de travailler sereinement.`
+ if(c.material==='positive')details.push(pick([
+  `Le matériel est apporté régulièrement, ce qui permet de travailler sereinement.`,
+  `Les affaires nécessaires sont présentes à chaque séance : c'est une bonne habitude.`,
+  `La préparation du matériel est régulière et appréciable.`
  ]));
- else if(c.behavior==='negative') engagement.push(pick([
-  `Une attitude plus calme et attentive est attendue pour permettre à ${first} de mieux profiter du cours.`,
-  `${first} doit veiller à adopter une attitude plus adaptée au travail en classe.`
+ else if(c.material==='negative')details.push(pick([
+  `Les oublis de matériel sont encore trop fréquents et doivent être corrigés.`,
+  `Il faut penser à apporter le matériel demandé à chaque séance.`,
+  `Des oublis de matériel gênent parfois le travail ; il faudra être plus vigilant.`
  ]));
- const work=[];
- if(c.material==='positive'&&c.work==='positive') work.push(pick([
-  `Le matériel est toujours prêt et le travail personnel est régulier : c'est un vrai point fort.`,
-  `${first} arrive avec le matériel nécessaire et fournit un travail personnel sérieux.`
+ if(c.work==='positive')details.push(pick([
+  `Le travail personnel est sérieux et régulier.`,
+  `Les efforts fournis en dehors du cours aident à consolider les acquis.`,
+  `Le travail personnel est satisfaisant et mérite d'être poursuivi.`
  ]));
- else if(c.material==='negative'&&c.work==='negative') work.push(pick([
-  `Il faut penser à apporter le matériel et fournir un travail personnel plus régulier.`,
-  `Les oublis de matériel et le manque de travail personnel freinent les progrès. Ces points doivent être améliorés.`
+ else if(c.work==='negative')details.push(pick([
+  `Le travail personnel doit être plus régulier pour consolider les apprentissages.`,
+  `Il faut approfondir davantage le travail personnel entre les séances.`,
+  `Un investissement plus régulier dans le travail personnel est nécessaire.`
  ]));
- else if(c.material==='positive') work.push(pick([
-  `Le matériel est apporté régulièrement, ce qui permet de travailler dans de bonnes conditions.`,
-  `${first} pense à venir avec le matériel nécessaire. Il faut garder cette habitude.`
- ]));
- else if(c.material==='negative') work.push(pick([
-  `Les oublis de matériel sont encore trop fréquents et gênent le travail. Il faut y être plus attentif.`,
-  `${first} doit penser à apporter le matériel demandé à chaque séance.`
- ]));
- if(c.work==='positive'&&c.material!=='positive') work.push(`Le travail personnel est sérieux et mérite d'être poursuivi.`);
- else if(c.work==='negative'&&c.material!=='negative') work.push(`Le travail personnel doit être plus régulier pour consolider les acquis.`);
- const notes=d.notes.slice(-1).filter(Boolean);
- let sentences=[opening,...engagement,...work];
- if(notes.length)sentences.push(notes[0]);
- if(d.avg!==null&&d.avg>=16)sentences.push(pick([`Félicitations, ${first} ! Continue ainsi.`,`Il faut poursuivre sur cette très belle dynamique.`]));
- else if(d.avg!==null&&d.avg>=12)sentences.push(pick([`Il faut poursuivre dans cette voie.`,`Continue les efforts, ils portent leurs fruits.`,`Je t'encourage à continuer ainsi.`]));
- else if(d.avg!==null)sentences.push(pick([`Je compte sur ${first} pour poursuivre ses efforts au prochain trimestre.`,`Il faut s'accrocher : les progrès viendront avec davantage de régularité.`]));
- if(len==='short')sentences=sentences.slice(0,Math.min(2,sentences.length));
- if(len==='medium'&&sentences.length>4)sentences=sentences.slice(0,4);
+ // Combine related details into a readable paragraph, without repeating the pupil's name mechanically.
+ if(details.length){
+  if(details.length===1)sentences.push(details[0]);
+  else if(details.length===2)sentences.push(details.join(' '));
+  else sentences.push(details.slice(0,2).join(' '),details.slice(2).join(' '));
+ }
+ if(d.avg!==null){
+  if(d.avg>=16)sentences.push(pick([`Félicitations pour ce très bon travail !`,`Il faut poursuivre sur cette belle dynamique.`,`Continue ainsi, c'est un très beau trimestre.`]));
+  else if(d.avg>=12)sentences.push(pick([`Il faut poursuivre dans cette voie.`,`Les efforts sont à continuer au prochain trimestre.`,`Continue ainsi pour consolider ces acquis.`]));
+  else sentences.push(pick([`Je compte sur ${first} pour poursuivre ses efforts au prochain trimestre.`,`Il ne faut pas se décourager : davantage de régularité permettra de progresser.`,`Les efforts doivent se poursuivre pour améliorer le prochain bilan.`]));
+ }
+ if(len==='short')return sentences.slice(0,Math.min(2,sentences.length)).join(' ');
+ if(len==='medium'&&sentences.length>4)return sentences.slice(0,4).join(' ');
  return sentences.join(' ');
 }
 
@@ -1127,6 +1167,7 @@ function restoreClassListIfHidden(){
  const input=document.getElementById('classSearch');
  if(input)input.value='';
  restoreClassListIfHidden();
+ decorateDashboard();
  window.addEventListener('pageshow',()=>{
   if(page==='classes')restoreClassListIfHidden();
  });
