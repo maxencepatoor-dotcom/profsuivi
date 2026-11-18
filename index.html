@@ -54,6 +54,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 .auto-match select{font-size:13px;padding:8px}
 .bulletin-card{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0}
 .bulletin-card textarea{min-height:86px;font-size:14px}
+.bulletin-student-photo{width:64px;height:76px;object-fit:cover;border-radius:9px;border:1px solid var(--line);background:#e2e8f0;flex:0 0 auto}.bulletin-student-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}.bulletin-student-head .muted{font-size:12px}.bulletin-print-photo{width:58px;height:68px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:10px;border:1px solid #ddd}
 
 @media(min-width:650px){.portrait-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 
@@ -76,7 +77,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V7.0 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V7.0.1 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -734,7 +735,7 @@ function prepareClassBulletins(){
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
  const opts=(v,pos,neg)=>`<option value="neutral" ${v==='neutral'?'selected':''}>À définir</option><option value="positive" ${v==='positive'?'selected':''}>${pos}</option><option value="negative" ${v==='negative'?'selected':''}>${neg}</option>`;
- box.innerHTML=bulletinDrafts.map((b,i)=>`<div class="bulletin-card"><b>${esc(b.name)}</b><div class="grid" style="margin-top:8px"><div><label>Participation</label><select data-crit="participation" data-index="${i}">${opts(b.criteria.participation,'Suffisante','Insuffisante')}</select></div><div><label>Comportement</label><select data-crit="behavior" data-index="${i}">${opts(b.criteria.behavior,'Satisfaisant','Insatisfaisant')}</select></div><div><label>Matériel</label><select data-crit="material" data-index="${i}">${opts(b.criteria.material,'Apporté régulièrement','Oublis fréquents')}</select></div><div><label>Travail personnel</label><select data-crit="work" data-index="${i}">${opts(b.criteria.work,'Suffisant','Insuffisant')}</select></div></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`).join('');
+ box.innerHTML=bulletinDrafts.map((b,i)=>{const student=cls().students.find(x=>x.id===b.id);return `<div class="bulletin-card"><div class="bulletin-student-head">${student?.photo?`<img class="bulletin-student-photo" src="${student.photo}" alt="Photo de ${esc(b.name)}">`:`<div class="bulletin-student-photo" aria-label="Photo non disponible"></div>`}<div><b>${esc(b.name)}</b><div class="muted">${student?.photo?`Photo de l’élève`:`Aucune photo enregistrée`}</div></div></div><div class="grid" style="margin-top:8px"><div><label>Participation</label><select data-crit="participation" data-index="${i}">${opts(b.criteria.participation,'Suffisante','Insuffisante')}</select></div><div><label>Comportement</label><select data-crit="behavior" data-index="${i}">${opts(b.criteria.behavior,'Satisfaisant','Insatisfaisant')}</select></div><div><label>Matériel</label><select data-crit="material" data-index="${i}">${opts(b.criteria.material,'Apporté régulièrement','Oublis fréquents')}</select></div><div><label>Travail personnel</label><select data-crit="work" data-index="${i}">${opts(b.criteria.work,'Suffisant','Insuffisant')}</select></div></div><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`}).join('');
  box.querySelectorAll('select[data-crit]').forEach(el=>el.onchange=()=>{const b=bulletinDrafts[+el.dataset.index],s=cls().students.find(x=>x.id===b.id);b.criteria[el.dataset.crit]=el.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
  box.querySelectorAll('textarea[data-bulletin]').forEach(t=>t.oninput=()=>bulletinDrafts[+t.dataset.bulletin].text=t.value);
 }
@@ -749,17 +750,17 @@ function anotherBulletinWording(i){
 function printClassBulletins(){
  if(!bulletinDrafts.length)prepareClassBulletins();if(!bulletinDrafts.length)return;
  const period=esc(document.getElementById('bulletinQuarter')?.selectedOptions[0]?.text||'Période'),c=cls();
- const body=bulletinDrafts.map(b=>`<article><h2>${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`).join('');
+ const body=bulletinDrafts.map(b=>{const s=c.students.find(x=>x.id===b.id);return `<article><h2>${s?.photo?`<img class="bulletin-print-photo" src="${s.photo}" alt="">`:''}${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`}).join('');
  printBulletinDoc(`Appréciations — ${esc(c.name)} — ${period}`,body);
 }
 function printOneBulletin(id){
  if(!bulletinDrafts.length)prepareClassBulletins();
  const b=bulletinDrafts.find(x=>x.id===id)||bulletinDrafts[0];if(!b)return;
- printBulletinDoc(`Appréciation — ${esc(b.name)} — ${esc(document.getElementById('bulletinQuarter')?.selectedOptions[0]?.text||'Période')}`,`<article><h2>${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`);
+ const s=cls().students.find(x=>x.id===b.id);printBulletinDoc(`Appréciation — ${esc(b.name)} — ${esc(document.getElementById('bulletinQuarter')?.selectedOptions[0]?.text||'Période')}`,`<article><h2>${s?.photo?`<img class="bulletin-print-photo" src="${s.photo}" alt="">`:''}${esc(b.name)}</h2><p>${esc(b.text)}</p></article>`);
 }
 function printBulletinDoc(title,body){
  const w=window.open('','_blank');if(!w)return alert('Autorise les fenêtres surgissantes pour imprimer le PDF.');
- w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}</body></html>`);
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${title}</title><style>body{font:14px Arial,sans-serif;color:#111;padding:24px}h1{font-size:20px;border-bottom:1px solid #999;padding-bottom:10px}article{page-break-inside:avoid;border-bottom:1px solid #ddd;padding:12px 0}h2{font-size:15px;margin:0 0 6px;display:flex;align-items:center} .bulletin-print-photo{width:58px;height:68px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:10px;border:1px solid #ddd}p{line-height:1.5;margin:0}@media print{button{display:none}}</style></head><body><h1>${title}</h1>${body}</body></html>`);
  w.document.close();w.onload=()=>setTimeout(()=>w.print(),300);
 }
 
