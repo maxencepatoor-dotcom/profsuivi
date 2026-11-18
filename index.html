@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.7 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9.8 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -789,29 +789,29 @@ function gradeRowsFromWords(words){const a=(words||[]).filter(w=>w.text&&w.bbox&
 function parseGradeTableWords(words,rawText){
  const status=document.getElementById('gradePhotoStatus'),review=document.getElementById('gradePhotoReview'),students=cls()?.students||[],rows=gradeRowsFromWords(words);
  const totalHeaders=[];
- for(const r of rows){for(let i=0;i<r.words.length;i++){const t=gradeWordNorm(r.words[i].text);if(/^(total|tot)$/i.test(t))totalHeaders.push({y:r.y,x:r.words[i].x})}}
+ for(const r of rows){for(const w of r.words){const t=gradeWordNorm(w.text);if(/^(total|tot)$/i.test(t))totalHeaders.push({y:r.y,x:w.x})}}
  if(!totalHeaders.length){status.textContent='Je ne repère pas la colonne TOTAL. Vérifie que son en-tête est visible sur la photo.';review.innerHTML=`<details><summary>Texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details>`;return}
- // L’en-tête TOTAL est le seul repère nécessaire : pour chaque ligne d’élève,
- // la dernière valeur numérique de la ligne correspond à la note totale.
- const header=totalHeaders.sort((a,b)=>a.y-b.y)[0],nameMatches=[];
+ const nameMatches=[];
  for(const r of rows){
-  if(Math.abs(r.y-header.y)<25)continue;
+  if(totalHeaders.some(h=>Math.abs(r.y-h.y)<24))continue;
   const rowText=r.words.map(w=>w.text).join(' '),norm=gradeWordNorm(rowText);
   let found=null,score=0;
   for(const st of students){const parts=String(st.name||'').split(/\s+/).map(gradeWordNorm).filter(x=>x.length>1);if(!parts.length)continue;const hits=parts.filter(t=>norm.includes(t)).length,sc=hits/parts.length;if(sc>score){score=sc;found=st}}
   if(!found||score<.99)continue;
-  const numeric=r.words.map(w=>({x:w.x,v:gradeNum(w.text)})).filter(x=>x.v!==null).sort((a,b)=>a.x-b.x);
+  const numeric=r.words.map(w=>({x:w.x,v:gradeNum(w.text)})).filter(x=>x.v!==null&&x.v>=0&&x.v<=20);
   if(!numeric.length)continue;
-  const total=numeric[numeric.length-1].v;
-  if(total<0||total>20)continue;
-  nameMatches.push({studentId:found.id,name:found.name,total,line:rowText,y:r.y});
+  const closestHeader=totalHeaders.reduce((best,h)=>Math.abs(h.y-r.y)<Math.abs(best.y-r.y)?h:best,totalHeaders[0]);
+  const sorted=numeric.map(n=>({...n,dist:Math.abs(n.x-closestHeader.x)})).sort((a,b)=>a.dist-b.dist);
+  const candidate=sorted[0],other=sorted[1];
+  if(other&&candidate.dist>Math.abs(other.x-candidate.x)*.48)continue;
+  nameMatches.push({studentId:found.id,name:found.name,total:candidate.v,line:rowText,y:r.y});
  }
  const merged={};
  nameMatches.forEach(e=>{const m=merged[e.studentId]||(merged[e.studentId]={studentId:e.studentId,name:e.name,total:e.total,lines:[]});m.total=Math.max(m.total,e.total);m.lines.push(e.line)});
  pendingPhotoGrades=Object.values(merged);
  const cards=pendingPhotoGrades.map((e,i)=>`<div class="bulletin-card"><b>${esc(e.name)}</b><div class="muted">${e.lines.length>1?'Plusieurs passages détectés : meilleure note totale retenue.':'Un passage détecté.'}</div><label>Note totale sur 20</label><input type="number" min="0" max="20" step="0.5" value="${e.total}" data-photo-total-row="${i}"><p><b>Note retenue : ${e.total}/20</b></p></div>`).join('');
- review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) reconnu(s) sur ${students.length}. Seule la colonne TOTAL est utilisée pour la note. Les passages multiples sont fusionnés en conservant le meilleur total.</p>${cards}<details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider l’import des notes</button>`;
- status.textContent=pendingPhotoGrades.length?'Tableau analysé. Vérifie les notes totales avant import.':'Aucun élève avec note totale n’a été reconnu. Vérifie la photo ou les noms de la classe.';
+ review.innerHTML=`<p class="muted">${pendingPhotoGrades.length} élève(s) reconnu(s) sur ${students.length}. La note est lue sous la colonne TOTAL, selon la position de son en-tête. Les passages multiples sont fusionnés en conservant le meilleur total.</p>${cards}<details><summary>Voir le texte OCR brut</summary><pre style="white-space:pre-wrap">${esc(rawText)}</pre></details><button class="primary" style="width:100%;margin-top:10px" onclick="confirmPhotoGradeImport()">Valider l’import des notes</button>`;
+ status.textContent=pendingPhotoGrades.length?'Tableau analysé. Vérifie les notes totales avant import.':'Aucun total fiable reconnu. Vérifie la photo ou les noms de la classe.';
 }
 function confirmPhotoGradeImport(){const c=cls();if(!c||!pendingPhotoGrades.length)return alert('Aucune note à importer.');const inputs=[...document.querySelectorAll('[data-photo-total-row]')],byRow={};inputs.forEach(el=>{byRow[+el.dataset.photoTotalRow]=el.value===''?null:Number(el.value)});const ready=pendingPhotoGrades.map((e,i)=>({...e,total:byRow[i]??e.total}));const invalid=ready.filter(e=>!Number.isFinite(e.total)||e.total<0||e.total>20);if(invalid.length)return alert('Certaines notes totales sont absentes ou invalides. Corrige-les avant de valider.');if(!confirm('Importer '+ready.length+' élève(s) ? Seule la colonne TOTAL est prise en compte. Pour les élèves présents plusieurs fois, le meilleur total est conservé.'))return;const date=new Date().toISOString().slice(0,10);ready.forEach(e=>{const st=c.students.find(x=>x.id===e.studentId);if(!st)return;st.grades=st.grades||[];st.grades.push({value:e.total,title:'Évaluation — import photo (TOTAL)',date,source:'Photo',details:{total:e.total,method:'Colonne TOTAL uniquement'}})});save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' note(s) totale(s) ajoutée(s).';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];renderRoster()}
 
