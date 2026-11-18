@@ -76,7 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
 </style>
 </head>
 <body>
-<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.8.1 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
+<header><div class="headrow"><div><h1>ProfSuivi <span style="font-weight:400">Solo</span></h1><small>Suivi de classe · V6.9 · stockage sur cet iPhone</small></div><span class="pill" style="background:#dbeafe;color:#1e3a8a">Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="panel">
@@ -153,6 +153,20 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
   </div>
   <p class="muted">L’export ouvre la fenêtre d’impression iOS : choisis « Enregistrer dans Fichiers » pour obtenir le PDF. Les appréciations sont des propositions à relire et valider avant leur saisie dans Pronote.</p>
  </div>
+ <div class="panel" id="mailExportPanel">
+  <h2>Tout envoyer par mail</h2>
+  <p class="muted">Regroupe les documents choisis dans un seul PDF, puis ouvre la feuille de partage de l’iPhone. Les données restent sur cet appareil.</p>
+  <label>Ton adresse mail (pour préparer le partage)</label>
+  <input id="mailExportAddress" type="email" autocomplete="email" placeholder="ex. prenom.nom@ac-lille.fr">
+  <div class="grid" style="margin-top:10px">
+   <label><input type="checkbox" id="mailIncludeBulletins" checked> Bulletins / appréciations individuelles</label>
+   <label><input type="checkbox" id="mailIncludeSkills" checked> Bilan des compétences</label>
+   <label><input type="checkbox" id="mailIncludeClass" checked> Synthèse de classe</label>
+   <label><input type="checkbox" id="mailIncludeCouncil"> Bilan pour le conseil de classe</label>
+  </div>
+  <button class="primary" style="width:100%;margin-top:12px" onclick="shareClassDocuments()">Préparer le PDF et partager</button>
+  <p class="muted" id="mailExportStatus" aria-live="polite" style="margin-top:8px">Sur iPhone, choisis Mail dans la feuille de partage. Vérifie le destinataire et envoie le message.</p>
+ </div>
 
  <div class="panel">
   <h2>Importer les notes Pronote</h2>
@@ -162,6 +176,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:9px 5px;b
   <button class="primary" style="width:100%;margin-top:9px" onclick="previewPronoteGrades()">Analyser le fichier</button>
   <div id="pronoteImportPreview" style="margin-top:10px"></div>
  </div>
+ <div id="v69Tools"></div>
  <div id="studentList"></div>
 </section>
 
@@ -230,8 +245,35 @@ function eventAdd(s,type,label){s.events.push({id:uid(),type,label,date:document
 function sessionAverage(s){let vals=Object.values(s.sessions||{}).map(x=>({session:Number(x.session),value:Number(x.individual??x.collective),date:x.date||''})).filter(x=>x.session>=1&&x.session<=5&&Number.isFinite(x.value));let latest={};vals.forEach(x=>{if(!latest[x.session]||x.date>=latest[x.session].date)latest[x.session]=x});let a=Object.values(latest);return {avg:a.length?a.reduce((t,x)=>t+x.value,0)/a.length:null,count:a.length,values:latest}}
 function renderRoster(){let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;renderPortraits();document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';let stats={present:0,events:0,graded:0};c.students.forEach(s=>{stats.events+=s.events.length;if(s.events.some(e=>e.type==='Présent'&&e.date===d.value&&e.session===Number(document.getElementById('sessionNo').value)))stats.present++;if(sessionAverage(s).count)stats.graded++});document.getElementById('classStats').innerHTML=`<div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.present}</b><span>Présents notés</span></div><div class="statbox"><b>${stats.graded}</b><span>Avec participation</span></div>`;
  let averages=c.students.map(s=>sessionAverage(s).avg).filter(x=>x!==null);let classAvg=averages.length?averages.reduce((a,b)=>a+b,0)/averages.length:null;document.getElementById('classAverage').textContent=classAvg===null?'Aucune note de participation enregistrée pour le moment.':`Moyenne de classe : ${classAvg.toFixed(2).replace('.',',')} / 4 · ${averages.length} élève(s) évalué(s)`;
+ renderV69Tools();
  if(!c.students.length){list.innerHTML='<div class="panel empty">Aucun élève. Ajoute-les manuellement ou importe un CSV Pronote.</div>';return}
  c.students.sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(s=>{let count=s.events.length,avg=sessionAverage(s).avg;let card=document.createElement('div');card.className='student';card.innerHTML=`<div class="studenttop"><div>${s.photo?`<img class="studentavatar" src="${s.photo}" alt="">`:``}<div><div class="studentname">${esc(s.name)}</div><div class="muted">${count} événement(s) · Participation : ${avg===null?'—':avg.toFixed(2).replace('.',',')+'/4'}</div></div></div><button class="small">Fiche →</button></div><div class="actions"><button class="softgreen" data-t="Participation +">Participation +</button><button class="softgreen" data-t="Comportement +">Comportement +</button><button class="softred" data-t="Perturbation">Perturbation</button><button data-t="Cahier oublié">Cahier oublié</button><button data-t="Travail non fait">Travail non fait</button><button data-t="Absence">Absence</button></div>`;card.querySelector('.studenttop button').onclick=()=>{currentStudent=s.id;go('student')};card.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>eventAdd(s,b.dataset.t,b.dataset.t));list.appendChild(card)})}
+
+function renderV69Tools(){
+ const c=cls(),root=document.getElementById('v69Tools');if(!c||!root)return;
+ const program=activeProgram(),terms=['T1','T2','T3'];
+ const allSkills=program.domains;
+ const seq=(c.sequences||[]);
+ const q=document.getElementById('bulletinQuarter')?.value||'T1';
+ const vals=allSkills.map(d=>({d,levels:c.students.map(s=>s.skills?.[q]?.[d.id]).filter(Boolean)}));
+ const stats=vals.map(x=>{let m=x.levels.length?x.levels.filter(v=>v==='mastered').length:0;return {...x,done:x.levels.length,mastered:m,rate:x.levels.length?Math.round(m/x.levels.length*100):0}});
+ const strongest=stats.filter(x=>x.done).sort((a,b)=>b.rate-a.rate)[0],weakest=stats.filter(x=>x.done).sort((a,b)=>a.rate-b.rate)[0];
+ const rank={emerging:1,progressing:2,mastered:3};const progress=c.students.map(s=>{const a=s.skills?.T1||{},b=s.skills?.T3||{},shared=Object.keys(a).filter(k=>rank[a[k]]&&rank[b[k]]),delta=shared.length?shared.reduce((n,k)=>n+rank[b[k]]-rank[a[k]],0):0;return {s,delta,shared:shared.length}}).filter(x=>x.delta>0).sort((a,b)=>b.delta-a.delta).slice(0,5);
+ const skillOpts=allSkills.map(d=>`<option value="${d.id}">${esc(d.title)}</option>`).join('');
+ root.innerHTML=`<div class="panel"><div class="row between"><h2>Tableau de bord de la classe</h2><span class="pill">${program.label}</span></div><div class="statsgrid"><div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.reduce((a,x)=>a+x.done,0)}</b><span>Évaluations de compétences</span></div><div class="statbox"><b>${stats.filter(x=>x.done).length}</b><span>Compétences suivies</span></div></div><div style="margin-top:10px"><b>Compétences les plus maîtrisées / à renforcer (${q})</b><p class="muted">${strongest?`Point fort : ${esc(strongest.d.title)} (${strongest.rate}% maîtrisé parmi les élèves évalués).`:'Pas encore de données suffisantes.'}<br>${weakest&&weakest!==strongest?`À renforcer : ${esc(weakest.d.title)} (${weakest.rate}% maîtrisé).`:''}</p></div><b>Progression T1 → T3</b><div class="muted">${progress.length?progress.map(x=>`<div class="avgline"><span>${esc(x.s.name)}</span><b>+${x.delta} niveau(x) sur ${x.shared} compétence(s) comparée(s)</b></div>`).join(''):'Les progressions apparaîtront lorsque les évaluations T1 et T3 seront renseignées.'}</div></div>
+ <div class="panel"><h2>Évaluation rapide de toute la classe</h2><p class="muted">Choisis une compétence, puis attribue un niveau à chaque élève sans ouvrir sa fiche. Les résultats sont enregistrés pour le trimestre choisi.</p><div class="grid"><div><label>Trimestre</label><select id="v69QuickQuarter"><option>T1</option><option>T2</option><option>T3</option></select></div><div><label>Compétence</label><select id="v69QuickSkill">${skillOpts}</select></div></div><div id="v69QuickGrid" style="margin-top:8px"></div><button class="primary" style="width:100%;margin-top:8px" onclick="saveQuickAssessments()">Enregistrer les niveaux</button></div>
+ <div class="panel"><h2>Évaluations par séquence</h2><p class="muted">Crée une séquence et sélectionne uniquement les compétences réellement travaillées. Tu pourras ensuite l’utiliser comme repère pour tes évaluations.</p><label>Nom de la séquence</label><input id="v69SeqName" placeholder="Ex. La voix est-elle un instrument ?"><div class="muted" style="margin:8px 0 4px">Compétences travaillées</div><div id="v69SeqSkills">${allSkills.map(d=>`<label style="display:flex;gap:8px;align-items:flex-start;margin:7px 0;color:var(--ink)"><input type="checkbox" value="${d.id}" style="width:auto;margin-top:3px"> <span>${esc(d.title)}</span></label>`).join('')}</div><button class="primary" style="width:100%" onclick="saveSequence()">Créer la séquence</button><div style="margin-top:10px">${seq.length?seq.map(x=>`<div class="avgline"><span><b>${esc(x.name)}</b><br><small class="muted">${x.skills.length} compétence(s) · ${esc(x.date||'')}</small></span><button class="small" onclick="useSequence('${x.id}')">Évaluer</button></div>`).join(''):'<p class="muted">Aucune séquence créée.</p>'}</div></div>
+ <div class="panel"><h2>Préparer le conseil de classe</h2><p class="muted">Génère une synthèse à relire : élèves à féliciter, à encourager, difficultés et points de vigilance. Elle reste indicative et ne remplace pas ton appréciation professionnelle.</p><div class="grid"><div><label>Trimestre</label><select id="v69CouncilQuarter"><option>T1</option><option>T2</option><option>T3</option></select></div><div><label>Inclure les observations</label><select id="v69CouncilNotes"><option value="yes">Oui</option><option value="no">Non</option></select></div></div><button class="primary" style="width:100%;margin-top:8px" onclick="printCouncilReport()">Préparer le PDF du conseil</button></div>`;
+ document.getElementById('v69QuickQuarter').value=q;
+ renderQuickGrid();
+ document.getElementById('v69QuickSkill').onchange=renderQuickGrid;
+ document.getElementById('v69QuickQuarter').onchange=renderQuickGrid;
+}
+function renderQuickGrid(){const c=cls(),box=document.getElementById('v69QuickGrid');if(!c||!box)return;const q=document.getElementById('v69QuickQuarter').value,id=document.getElementById('v69QuickSkill').value;box.innerHTML=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>`<div class="avgline" style="align-items:center"><span>${esc(s.name)}</span><select data-qstudent="${s.id}" style="max-width:190px">${SKILL_LEVELS.map(v=>`<option value="${v[0]}" ${String(s.skills?.[q]?.[id]||'')===v[0]?'selected':''}>${v[1]}</option>`).join('')}</select></div>`).join('')||'<p class="muted">Aucun élève dans cette classe.</p>'}
+function saveQuickAssessments(){const c=cls(),q=document.getElementById('v69QuickQuarter').value,id=document.getElementById('v69QuickSkill').value;if(!c)return;c.students.forEach(s=>{const el=document.querySelector(`[data-qstudent="${s.id}"]`);s.skills=s.skills||{};s.skills[q]=s.skills[q]||{};if(el&&el.value)s.skills[q][id]=el.value;else if(el)delete s.skills[q][id]});save();alert('Évaluations enregistrées pour '+q+'.');renderV69Tools()}
+function saveSequence(){const c=cls(),name=document.getElementById('v69SeqName').value.trim(),skills=[...document.querySelectorAll('#v69SeqSkills input:checked')].map(x=>x.value);if(!name)return alert('Donne un nom à la séquence.');if(!skills.length)return alert('Sélectionne au moins une compétence.');c.sequences=c.sequences||[];c.sequences.push({id:uid(),name,skills,date:new Date().toLocaleDateString('fr-FR')});save();renderV69Tools();alert('Séquence créée.')}
+function useSequence(id){const c=cls(),seq=(c.sequences||[]).find(x=>x.id===id);if(!seq)return;const chosen=seq.skills[0];const q=prompt('Séquence : '+seq.name+'\nCompétences associées : '+seq.skills.map(k=>activeProgram().domains.find(d=>d.id===k)?.title||k).join(' ; ')+'\n\nTrimestre à évaluer (T1, T2 ou T3) :','T1');if(!['T1','T2','T3'].includes(q))return;document.getElementById('v69QuickQuarter').value=q;document.getElementById('v69QuickSkill').value=chosen;renderQuickGrid();document.getElementById('v69QuickGrid').scrollIntoView({behavior:'smooth',block:'start'})}
+function printCouncilReport(){const c=cls(),q=document.getElementById('v69CouncilQuarter').value,include=document.getElementById('v69CouncilNotes').value==='yes';if(!c)return;let congrats=[],encourage=[],watch=[];c.students.forEach(s=>{const skills=Object.values(s.skills?.[q]||{}),mastered=skills.filter(x=>x==='mastered').length,weak=skills.filter(x=>x==='emerging').length,avg=bulletinData(s).avg,part=sessionAverage(s).avg,notes=include?(s.notes||[]).map(n=>n.text).filter(Boolean):[];if(mastered>=2||(avg!==null&&avg>=14))congrats.push(s.name+' — acquis maîtrisés : '+mastered+(avg!==null?' ; moyenne : '+avg.toFixed(1).replace('.',',')+'/20':''));if(weak>=2||(avg!==null&&avg<10))encourage.push(s.name+' — '+weak+' compétence(s) à renforcer'+(avg!==null?' ; moyenne : '+avg.toFixed(1).replace('.',',')+'/20':''));if(notes.length||part!==null&&part<2)watch.push(s.name+' — '+[notes.join(' / '),part!==null&&part<2?'participation à consolider':''].filter(Boolean).join(' ; '))});const li=a=>a.length?a.map(x=>'<li>'+esc(x)+'</li>').join(''):'<li>Aucun élève identifié avec les données disponibles.</li>';printBulletinDoc('Conseil de classe — '+esc(c.name)+' — '+q,`<h2>À féliciter</h2><ul>${li(congrats)}</ul><h2>À encourager</h2><ul>${li(encourage)}</ul><h2>Points de vigilance / observations</h2><ul>${li(watch)}</ul><p><small>Synthèse automatique fondée sur les données saisies dans ProfSuivi. À vérifier et compléter avant le conseil.</small></p>`)}
 let classPhotoImage=null,cropPoint=null;
 function initTrombi(){let input=document.getElementById('classPhotoFile');if(!input)return;input.onchange=()=>{let f=input.files[0];if(!f)return;let rd=new FileReader();rd.onload=()=>{let im=new Image();im.onload=()=>{classPhotoImage=im;let stage=document.getElementById('photoStage');stage.innerHTML='';let shown=document.createElement('img');shown.src=rd.result;shown.alt='Photo de classe';shown.onclick=onClassPhotoTap;stage.appendChild(shown);document.getElementById('cropControls').classList.add('hidden')};im.src=rd.result};rd.readAsDataURL(f)}}
 function onClassPhotoTap(ev){if(!classPhotoImage)return;let rect=ev.currentTarget.getBoundingClientRect();cropPoint={x:(ev.clientX-rect.left)/rect.width,y:(ev.clientY-rect.top)/rect.height};let sel=document.getElementById('cropStudent');sel.innerHTML=cls().students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');if(!sel.options.length)return alert('Ajoute les élèves avant le trombinoscope.');document.getElementById('cropControls').classList.remove('hidden');updateCropPreview()}
@@ -245,18 +287,47 @@ function setAllPresent(){let c=cls();c.students.forEach(s=>{let exists=s.events.
 function classParticipation(){let v=prompt('Note collective de participation pour cette séance (sur 4)');if(v===null)return;let n=Number(v);if(!Number.isFinite(n)||n<0||n>4){alert('Entre une note de 0 à 4.');return}let c=cls(),date=document.getElementById('sessionDate').value,no=Number(document.getElementById('sessionNo').value);c.students.forEach(s=>{s.sessions[date+'_'+no]={date,session:no,collective:n,individual:null}});save();alert('Note collective enregistrée. Tu peux modifier chaque élève dans sa fiche.')}
 
 const SKILL_LEVELS=[['','Non évalué'],['emerging','À renforcer'],['progressing','En cours d’acquisition'],['mastered','Maîtrisé']];
-function skillDefinitions(){
- const n=String(cls()?.name||'').toLowerCase(),is6=/(^|[^0-9])6(e|ème|eme)?([^a-z]|$)/.test(n)||/6e/.test(n);
- if(is6)return [['Perception','Percevoir et décrire des caractéristiques musicales ; comparer des œuvres et construire des repères d’écoute.'],['Production','Chanter, interpréter et créer dans le cadre de projets musicaux.']];
- return [['Réaliser des projets musicaux d’interprétation ou de création','Définir les caractéristiques musicales d’un projet, le mettre en œuvre et le présenter.'],['Écouter, comparer, construire une culture musicale commune','Analyser des œuvres avec un vocabulaire précis et construire des repères dans le temps et l’espace.'],['Explorer, imaginer, créer et produire','Réutiliser des caractéristiques musicales et concevoir ou réaliser une production.'],['Échanger, partager, argumenter et débattre','Porter un regard critique et argumenter sur des productions musicales.']];
-}
+// Référentiel disciplinaire : formulations issues des programmes officiels Eduscol/BO.
+const MUSIC_PROGRAM={
+ cycle3:{label:'Cycle 3 — 6e',domains:[
+  {id:'c3_sing',title:'Chanter et interpréter',socle:'1, 5',items:[
+   'Reproduire et interpréter un modèle mélodique et rythmique.','Chanter une mélodie simple avec une intonation juste et une intention expressive.','Mémoriser et chanter par cœur un chant appris par imitation, soutenir un bref moment de chant en solo.','Interpréter un chant avec expressivité en respectant plusieurs choix et contraintes précédemment indiqués.','Tenir sa partie dans un bref moment de polyphonie.','Mobiliser son corps pour interpréter, le cas échéant avec des instruments.','Identifier les difficultés rencontrées dans l’interprétation d’un chant.'
+  ],knowledge:'Répertoire de chansons diverses ; paramètres du son et techniques vocales ; nuances simples, tempo, caractère ; rôle complémentaire des parties simultanées ; notion d’interprétation.'},
+  {id:'c3_listen',title:'Écouter, comparer et commenter',socle:'1, 3, 5',items:[
+   'Décrire et comparer des éléments sonores issus de la biodiversité, de contextes musicaux, d’aires géographiques ou culturelles différents et dans un temps historique, contemporain, proche ou lointain.','Identifier et nommer ressemblances et différences dans deux extraits musicaux.','Repérer et nommer une organisation simple dans un extrait musical : répétition d’une mélodie, d’un motif rythmique, d’un thème, d’une partie caractéristique ; en déduire une forme simple (couplet/refrain, ABA par exemple).','Associer la découverte d’une œuvre à des connaissances construites dans d’autres domaines enseignés.'
+  ],knowledge:'Vocabulaire simple pour décrire la musique ; méthodes pour comparer ; repères simples dans le temps et dans l’espace ; grandes œuvres du patrimoine ; principales caractéristiques de l’orchestre symphonique ; formes de production vocales, instrumentales et solistes.'},
+  {id:'c3_create',title:'Explorer, imaginer et créer',socle:'1, 5',items:[
+   'Expérimenter les paramètres du son et en imaginer des utilisations possibles.','Imaginer des représentations graphiques pour organiser une succession de sons et d’événements sonores.','Inventer une organisation simple à partir de sources sonores sélectionnées (dont la voix) et l’interpréter.','Faire des propositions personnelles lors de moments de création, d’invention et d’interprétation.'
+  ],knowledge:'Lexique de la hauteur, du timbre, de la durée et de l’intensité ; diversité des matériaux sonores ; postures de l’explorateur du son et du compositeur ; partition graphique et traduction sonore ; exigences de la musique collective.'},
+  {id:'c3_share',title:'Échanger, partager et argumenter',socle:'1, 3, 5',items:[
+   'Exprimer ses goûts au-delà de son ressenti immédiat.','Écouter et respecter le point de vue des autres et l’expression de leur sensibilité.','Argumenter un jugement sur une musique tout en respectant celui des autres.','Argumenter un choix dans la perspective d’une interprétation collective.'
+  ],knowledge:'Respect, bienveillance, tolérance ; vocabulaire adapté à l’expression et à l’argumentation ; concentration, écoute, respect et auto-évaluation dans le travail collectif.'}
+ ],expectations:['Identifier, choisir et mobiliser les techniques vocales et corporelles au service du sens et de l’expression.','Mettre en lien des caractéristiques musicales d’œuvres différentes, les nommer et les présenter en lien avec d’autres savoirs.','Explorer les sons de la voix, de l’environnement immédiat et de la nature, imaginer des utilisations musicales, créer des organisations dans le temps d’un ensemble de sons sélectionnés.','Développer sa sensibilité, son esprit critique et s’enrichir de la diversité des goûts personnels et des esthétiques.']},
+ cycle4:{label:'Cycle 4 — 5e, 4e, 3e',domains:[
+  {id:'c4_project',title:'Réaliser des projets musicaux d’interprétation ou de création',socle:'1, 3, 5',items:[
+   'Définir les caractéristiques musicales d’un projet, puis en assurer la mise en œuvre en mobilisant les ressources adaptées.','Définir les caractéristiques expressives d’un projet, puis en assurer la mise en œuvre.','Réaliser des projets musicaux dans un cadre collectif (classe), en petit groupe ou individuellement.','Interpréter un projet devant d’autres élèves et présenter les choix artistiques effectués.','Tenir sa partie dans un contexte polyphonique.'
+  ],knowledge:'Répertoires d’esthétiques diverses ; vocabulaire et techniques de l’interprétation (dynamique, phrasé, timbre, rythme, hauteur, forme) ; outils numériques pour capter, manipuler et organiser les sons ; démarches de création et prosodie.'},
+  {id:'c4_listen',title:'Écouter, comparer, construire une culture musicale commune',socle:'1, 2, 5',items:[
+   'Mobiliser sa mémoire sur des objets musicaux longs et complexes.','Situer et comparer des musiques de styles proches ou éloignés dans l’espace et/ou dans le temps pour construire des repères techniques et culturels.','Mettre en lien des caractéristiques musicales et des marqueurs esthétiques avec des contextes historiques, sociologiques, techniques et culturels.','Mobiliser des repères permettant d’identifier les principaux styles musicaux.','Associer des références relevant d’autres domaines artistiques aux œuvres musicales étudiées.','Identifier par comparaison les différences et ressemblances dans l’interprétation d’une œuvre donnée.','Percevoir et décrire les qualités artistiques et techniques d’un enregistrement.','Manipuler plusieurs formes de représentation graphique de la musique à l’aide d’outils numériques.'
+  ],knowledge:'Lexiques du langage musical : timbre et espace, dynamique, temps et rythme, forme, successif et simultané, styles ; catégories vocales, instrumentales, électroacoustiques et mixtes ; œuvres patrimoniales ; repères d’histoire de la musique et des arts ; diversité des cultures et sensibilités ; fonctions sociales de la musique ; numérique, métiers, audition, risques auditifs, acoustique et décibels.'},
+  {id:'c4_create',title:'Explorer, imaginer, créer et produire',socle:'1, 2, 5',items:[
+   'Réutiliser certaines caractéristiques (style, technique, etc.) d’une œuvre connue pour nourrir son travail.','Concevoir, réaliser, arranger, pasticher une courte pièce préexistante, notamment à l’aide d’outils numériques.','Identifier les leviers permettant d’améliorer et/ou modifier le travail de création entrepris.','Mobiliser à bon escient un système de codage pour organiser une création.','S’autoévaluer à chaque étape du travail.','Identifier, rechercher et mobiliser à bon escient les ressources documentaires nécessaires à la réalisation d’un projet.','Réinvestir ses expériences personnelles de la création musicale pour écouter, comprendre et commenter celles des autres.','Concevoir une succession (« playlist ») d’œuvres musicales répondant à des objectifs artistiques.'
+  ],knowledge:'Production et perception ; création à partir d’œuvres préexistantes ; outils numériques ; codage ; ressources documentaires ; démarche de projet et autoévaluation.'},
+  {id:'c4_exchange',title:'Échanger, partager, argumenter et débattre',socle:'1, 3, 5',items:[
+   'Développer une critique constructive sur une production collective.','Porter un regard critique sur sa production individuelle.','Contribuer à l’élaboration collective de choix d’interprétation ou de création.','Transférer sur un projet musical en cours ou à venir les conclusions d’un débat antérieur sur une œuvre ou une esthétique.','Problématiser l’écoute d’une ou plusieurs œuvres.','Distinguer appréciation subjective et description objective.','Argumenter une critique adossée à une analyse objective.','Respecter la sensibilité de chacun et s’enrichir de la diversité des goûts personnels et des esthétiques.','Distinguer les postures de créateur, d’interprète et d’auditeur.','Respecter les sources et les droits d’auteur et l’utilisation de sons libres de droit.'
+  ],knowledge:'Argumentation et analyse objective ; critique constructive ; choix collectifs ; respect des sensibilités ; droits d’auteur et sons libres de droit.'}
+ ],expectations:['Mobiliser des techniques vocales et corporelles au service d’un projet d’interprétation ou de création.','Identifier, décrire, commenter une organisation musicale complexe et la situer dans un réseau de références musicales et artistiques diversifiées.','Concevoir, créer et réaliser des pièces musicales en référence à des styles, des œuvres, des contraintes d’interprétation ou de diffusion.','Présenter et justifier des choix d’interprétation et de création, justifier un avis sur une œuvre et défendre un point de vue en l’argumentant.']}
+};
+function activeProgram(){const n=String(cls()?.name||'').toLowerCase();return /(^|\D)6\s*(e|ème|eme)?(\D|$)/.test(n)?MUSIC_PROGRAM.cycle3:MUSIC_PROGRAM.cycle4}
+function skillDefinitions(){return activeProgram().domains.map(d=>[d.id,d.title,d.items,d.knowledge,d.socle])}
+
 function renderStudentSkills(){
  const s=student(),box=document.getElementById('skillAssessments');if(!s||!box)return;
- const q=document.getElementById('skillQuarter').value,saved=s.skills?.[q]||{};
- box.innerHTML=skillDefinitions().map((d,i)=>`<div style="padding:9px 0;border-bottom:1px solid var(--line)"><b>${esc(d[0])}</b><div class="muted">${esc(d[1])}</div><label style="margin-top:7px">Niveau</label><select data-skill="${i}">${SKILL_LEVELS.map(v=>`<option value="${v[0]}" ${String(saved[i]||'')===v[0]?'selected':''}>${v[1]}</option>`).join('')}</select></div>`).join('');
+ const q=document.getElementById('skillQuarter').value,saved=s.skills?.[q]||{},program=activeProgram();
+ box.innerHTML=program.domains.map((d,i)=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><b>${esc(d.title)}</b><span class="muted"> · Socle ${esc(d.socle)}</span><ul class="muted" style="padding-left:19px;margin:7px 0">${d.items.map(x=>`<li style="margin:4px 0">${esc(x)}</li>`).join('')}</ul><div class="muted"><b>Connaissances associées :</b> ${esc(d.knowledge)}</div><label style="margin-top:8px">Niveau global de cette compétence</label><select data-skill="${d.id}">${SKILL_LEVELS.map(v=>`<option value="${v[0]}" ${String(saved[d.id]||saved[String(i)]||'')===v[0]?'selected':''}>${v[1]}</option>`).join('')}</select></div>`).join('')+`<details style="margin-top:10px"><summary><b>Attendus de fin de ${program.label}</b></summary><ul class="muted">${program.expectations.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`;
 }
 function saveStudentSkills(){
- const s=student();if(!s)return;const q=document.getElementById('skillQuarter').value;s.skills=s.skills||{};s.skills[q]={};
+ const s=student();if(!s)return;const q=document.getElementById('skillQuarter').value;s.skills=s.skills||{};s.skills[q]=s.skills[q]||{};
  document.querySelectorAll('#skillAssessments select[data-skill]').forEach(el=>{if(el.value)s.skills[q][el.dataset.skill]=el.value});
  save();alert('Compétences enregistrées pour '+q+'.');
 }
@@ -605,7 +676,68 @@ function printBulletinDoc(title,body){
  w.document.close();w.onload=()=>setTimeout(()=>w.print(),300);
 }
 
-function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.8,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
+
+// V6.9.1 — export groupé local et partage iOS (un PDF unique).
+function pdfEscapeHex(str){
+ const win1252={'€':0x80,'‚':0x82,'ƒ':0x83,'„':0x84,'…':0x85,'†':0x86,'‡':0x87,'ˆ':0x88,'‰':0x89,'Š':0x8A,'‹':0x8B,'Œ':0x8C,'Ž':0x8E,'‘':0x91,'’':0x92,'“':0x93,'”':0x94,'•':0x95,'–':0x96,'—':0x97,'™':0x99,'š':0x9A,'›':0x9B,'œ':0x9C,'ž':0x9E,'Ÿ':0x9F,' ':0xA0};
+ const bytes=[]; for(const ch of String(str)){let n=win1252[ch]??ch.codePointAt(0);if(n>255)n=63;bytes.push(n.toString(16).padStart(2,'0'))}return bytes.join('').toUpperCase();
+}
+function pdfWrap(text,max=88){const words=String(text??'').replace(/\s+/g,' ').trim().split(' '),out=[];let line='';for(const w of words){if(!w)continue;if((line+' '+w).trim().length>max&&line){out.push(line);line=w}else line=(line+' '+w).trim()}if(line)out.push(line);return out.length?out:[''];}
+function makeLocalPDF(title,sections){
+ const pages=[];let lines=[];const add=(txt='',kind='body')=>{for(const line of pdfWrap(txt,kind==='heading'?66:88))lines.push({text:line,kind})};
+ add(title,'title');add('Classe : '+(cls()?.name||''),'small');add('Trimestre : '+(document.getElementById('bulletinQuarter')?.value||'T1'),'small');add('Généré le '+new Date().toLocaleDateString('fr-FR'),'small');add('','body');
+ sections.forEach(sec=>{add(sec.title,'heading');sec.lines.forEach(x=>add(x,'body'));add('','body')});
+ const max=42;for(let i=0;i<lines.length;i+=max)pages.push(lines.slice(i,i+max));if(!pages.length)pages.push([{text:'Aucun contenu disponible.',kind:'body'}]);
+ const objs=[];const addObj=x=>{objs.push(x);return objs.length};
+ const catalogId=addObj('');const pagesId=addObj('');
+ const fontId=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+ const boldFontId=addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+ const pageIds=[];
+ pages.forEach((pg,pi)=>{
+  let stream='BT\n';let y=790;
+  pg.forEach((ln,idx)=>{let size=ln.kind==='title'?18:ln.kind==='heading'?13:ln.kind==='small'?9:10;let bold=ln.kind==='title'||ln.kind==='heading';let x=ln.kind==='title'||ln.kind==='heading'?48:52;stream+=`/${bold?'F2':'F1'} ${size} Tf\n1 0 0 1 ${x} ${y} Tm\n<${pdfEscapeHex(ln.text)}> Tj\n`;y-=ln.kind==='title'?30:ln.kind==='heading'?22:ln.kind==='small'?14:16;});
+  stream+='ET';const contentId=addObj(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+  const pageId=addObj(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 ${fontId} 0 R /F2 ${boldFontId} 0 R >> >> /Contents ${contentId} 0 R >>`);pageIds.push(pageId);
+ });
+ objs[catalogId-1]=`<< /Type /Catalog /Pages ${pagesId} 0 R >>`;
+ objs[pagesId-1]=`<< /Type /Pages /Kids [${pageIds.map(x=>x+' 0 R').join(' ')}] /Count ${pageIds.length} >>`;
+ let pdf='%PDF-1.4\n',offsets=[0];objs.forEach((o,i)=>{offsets.push(pdf.length);pdf+=`${i+1} 0 obj\n${o}\nendobj\n`});let xref=pdf.length;pdf+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`;for(let i=1;i<offsets.length;i++)pdf+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';pdf+=`trailer\n<< /Size ${objs.length+1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+ return new Blob([new TextEncoder().encode(pdf)],{type:'application/pdf'});
+}
+function collectMailSections(){
+ const c=cls();if(!c)return[];const out=[];const checked=id=>document.getElementById(id)?.checked;
+ if(checked('mailIncludeBulletins')){
+  if(!bulletinDrafts.length)prepareClassBulletins();
+  out.push({title:'Bulletins et appréciations individuelles',lines:bulletinDrafts.map(b=>b.name+' — '+b.text)});
+ }
+ if(checked('mailIncludeSkills')){
+  const q=document.getElementById('bulletinQuarter')?.value||'T1',prog=activeProgram(),lines=[];
+  c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(s=>{lines.push(s.name);prog.domains.forEach(d=>{const v=s.skills?.[q]?.[d.id];if(v){const label=SKILL_LEVELS.find(x=>x[0]===v)?.[1]||v;lines.push('  '+d.title+' : '+label)}})});
+  out.push({title:'Bilan des compétences — '+q,lines:lines.length?lines:['Aucune évaluation de compétence enregistrée pour ce trimestre.']});
+ }
+ if(checked('mailIncludeClass')){
+  const q=document.getElementById('bulletinQuarter')?.value||'T1',avgs=c.students.map(s=>sessionAverage(s).avg).filter(x=>x!==null),grades=c.students.map(s=>bulletinData(s).avg).filter(x=>x!==null),lines=[`Effectif : ${c.students.length} élève(s)`,`Participation moyenne : ${avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2).replace('.',',')+'/4':'non renseignée'}`,`Moyenne des notes : ${grades.length?(grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(2).replace('.',',')+'/20':'non renseignée'}`];
+  c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(s=>{const a=bulletinData(s).avg,p=sessionAverage(s).avg;lines.push(`${s.name} — moyenne : ${a===null?'—':a.toFixed(1).replace('.',',')+'/20'} ; participation : ${p===null?'—':p.toFixed(1).replace('.',',')+'/4'}`)});
+  out.push({title:'Synthèse de classe — '+q,lines});
+ }
+ if(checked('mailIncludeCouncil')){
+  const q=document.getElementById('bulletinQuarter')?.value||'T1',congrats=[],encourage=[],watch=[];
+  c.students.forEach(s=>{const skills=Object.values(s.skills?.[q]||{}),mastered=skills.filter(x=>x==='mastered').length,weak=skills.filter(x=>x==='emerging').length,avg=bulletinData(s).avg,part=sessionAverage(s).avg,notes=(s.notes||[]).map(n=>n.text).filter(Boolean);if(mastered>=2||(avg!==null&&avg>=14))congrats.push(s.name+' — '+mastered+' compétence(s) maîtrisée(s)'+(avg!==null?' ; moyenne '+avg.toFixed(1).replace('.',',')+'/20':''));if(weak>=2||(avg!==null&&avg<10))encourage.push(s.name+' — '+weak+' compétence(s) à renforcer'+(avg!==null?' ; moyenne '+avg.toFixed(1).replace('.',',')+'/20':''));if(notes.length||(part!==null&&part<2))watch.push(s.name+' — '+[notes.join(' / '),part!==null&&part<2?'participation à consolider':''].filter(Boolean).join(' ; '))});
+  out.push({title:'Préparation du conseil de classe — '+q,lines:['À féliciter',...(congrats.length?congrats:['Aucun élève identifié avec les données disponibles.']),'À encourager',...(encourage.length?encourage:['Aucun élève identifié avec les données disponibles.']),'Points de vigilance',...(watch.length?watch:['Aucun point de vigilance enregistré.']),'Synthèse indicative à relire et compléter avant le conseil.']});
+ }
+ return out;
+}
+async function shareClassDocuments(){
+ const c=cls();if(!c)return alert('Sélectionne d’abord une classe.');const address=document.getElementById('mailExportAddress').value.trim();if(!address)return alert('Saisis ton adresse mail.');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address))return alert('Vérifie l’adresse mail saisie.');
+ const sections=collectMailSections();if(!sections.length)return alert('Coche au moins un type de document.');
+ const status=document.getElementById('mailExportStatus');status.textContent='Préparation du PDF…';
+ try{const blob=makeLocalPDF('ProfSuivi — Documents de classe',sections),file=new File([blob],`ProfSuivi_${c.name.replace(/[^a-z0-9_-]/gi,'_')}_${document.getElementById('bulletinQuarter').value}.pdf`,{type:'application/pdf'}),shareText='Documents ProfSuivi pour '+c.name+'. Destinataire prévu : '+address+'. Pense à vérifier le destinataire avant l’envoi.';
+  if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({files:[file],title:'Documents ProfSuivi — '+c.name,text:shareText});status.textContent='Feuille de partage ouverte. Dans Mail, vérifie le destinataire ('+address+') puis envoie le message.'}
+  else{download(blob,file.name);status.textContent='Le partage de fichiers n’est pas disponible dans ce navigateur. Le PDF a été téléchargé ; joins-le manuellement à un mail adressé à '+address+'.'}
+ }catch(e){if(e?.name==='AbortError'){status.textContent='Partage annulé. Aucun mail n’a été envoyé.';return}console.error(e);status.textContent='Impossible de lancer le partage. Essaie de télécharger le PDF.';alert('Le partage a échoué : '+(e.message||'erreur inconnue'))}
+}
+
+function backup(){let blob=new Blob([JSON.stringify({app:'ProfSuivi Solo',version:6.91,exported:new Date().toISOString(),data:db},null,2)],{type:'application/json'});download(blob,'ProfSuivi_sauvegarde_'+new Date().toISOString().slice(0,10)+'.json')}
 function restore(){let f=document.getElementById('restoreFile').files[0];if(!f)return alert('Choisis un fichier de sauvegarde.');let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.data||!Array.isArray(x.data.classes))throw 0;if(!confirm('Remplacer les données actuelles par cette sauvegarde ?'))return;db=x.data;save();currentClass=null;alert('Sauvegarde restaurée.');go('classes')}catch(e){alert('Fichier de sauvegarde invalide.')}};r.readAsText(f)}
 function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 function clearAll(){if(!confirm('Effacer définitivement toutes les classes et données enregistrées sur cet appareil ?'))return;if(!confirm('Dernière confirmation : cette action est irréversible sans sauvegarde.'))return;db={classes:[]};save();go('classes')}
