@@ -98,7 +98,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V7.8.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V7.9.1</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="classesView">
  <div class="section-kicker">Vue d’ensemble</div>
@@ -1179,9 +1179,16 @@ const SEQ_STEPS=[
  {title:'Fiches & évaluations',hint:'Supports élèves, corrigés, évaluations et barèmes.'}
 ];
 function seqStore(){db.sequenceLibrary=db.sequenceLibrary||[];db.sequenceDraft=db.sequenceDraft||null;return db}
-function newSequenceDraft(){seqStore();db.sequenceDraft={id:uid(),title:'',level:'5e',duration:'6 séances',theme:'',intent:'',works:'',worksNotes:'',problem:'',project:'',criteria:'',skills:'',lessons:'',studentSheets:'',teacherNotes:'',assessment:'',step:0,updatedAt:new Date().toISOString()};save();renderSequenceHome()}
+function newSequenceDraft(){
+ try{
+  seqStore();
+  db.sequenceDraft={id:uid(),title:'',level:'5e',duration:'6 séances',theme:'',intent:'',works:'',worksNotes:'',problem:'',project:'',criteria:'',skills:'',lessons:'',studentSheets:'',teacherNotes:'',assessment:'',step:0,updatedAt:new Date().toISOString()};
+  renderSequenceStep();
+  try{save();}catch(storageError){console.error('ProfSuivi: sauvegarde du brouillon impossible',storageError);const box=document.getElementById('sequenceHome');if(box)box.insertAdjacentHTML('afterbegin','<div class="notice">Le brouillon est ouvert, mais le navigateur n’a pas pu l’enregistrer. Exporte une sauvegarde et libère de l’espace de stockage avant de continuer.</div>');}
+ }catch(error){console.error('ProfSuivi: ouverture du générateur impossible',error);alert('Impossible d’ouvrir une nouvelle séquence : '+(error&&error.message?error.message:'erreur inconnue')+'. Aucun élève ni aucune donnée de classe n’a été supprimé.');}
+}
 function renderSequenceHome(){const box=document.getElementById('sequenceHome');if(!box)return;seqStore();let d=db.sequenceDraft,lib=db.sequenceLibrary||[];box.innerHTML=`<div class="seq-card"><h3>Créer une nouvelle séquence</h3><p class="muted">Assistant guidé en 7 étapes, avec validation progressive et sauvegarde automatique.</p><button class="primary" style="width:100%" onclick="newSequenceDraft()">+ Nouvelle séquence</button>${d?`<button style="width:100%;margin-top:7px" onclick="openSequenceDraft()">Reprendre : ${esc(d.title||d.theme||'Séquence sans titre')}</button>`:''}</div><h3 style="margin-top:16px">Ma bibliothèque (${lib.length})</h3>${lib.length?lib.slice().reverse().map(x=>`<div class="seq-library-item"><b>${esc(x.title||'Séquence sans titre')}</b><p>${esc(x.level||'')} · ${esc(x.duration||'')} · ${esc(x.theme||'')}</p><div class="row"><button class="small" onclick="viewSavedSequence('${x.id}')">Consulter</button><button class="small" onclick="duplicateSavedSequence('${x.id}')">Dupliquer</button><button class="small softred" onclick="deleteSavedSequence('${x.id}')">Supprimer</button></div></div>`).join(''):'<p class="muted">Aucune séquence enregistrée pour le moment.</p>'}`}
-function openSequenceDraft(){if(!db.sequenceDraft)return;renderSequenceStep()}
+function openSequenceDraft(){if(!db.sequenceDraft)return;try{renderSequenceStep()}catch(error){console.error(error);alert('Impossible de reprendre ce brouillon : '+(error.message||'erreur inconnue'))}}
 function seqField(id,label,value,placeholder='',multi=false){return `<label>${label}</label>${multi?`<textarea id="${id}" placeholder="${placeholder}" oninput="updateSequenceDraft()">${esc(value||'')}</textarea>`:`<input id="${id}" value="${esc(value||'')}" placeholder="${placeholder}" oninput="updateSequenceDraft()">`}`}
 function updateSequenceDraft(){let d=db.sequenceDraft;if(!d)return;['title','level','duration','theme','intent','works','worksNotes','problem','project','criteria','skills','lessons','studentSheets','teacherNotes','assessment'].forEach(k=>{let el=document.getElementById('seq_'+k);if(el)d[k]=el.value});d.updatedAt=new Date().toISOString();save()}
 function renderSequenceStep(){let d=db.sequenceDraft;if(!d)return renderSequenceHome();let n=Math.max(0,Math.min(6,Number(d.step)||0)),content='';
