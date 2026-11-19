@@ -153,7 +153,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
    <div><label>Longueur souhaitée</label><select id="bulletinLength"><option value="short">Courte</option><option value="medium" selected>Standard</option><option value="long">Détaillée</option></select></div>
   </div>
   <h3 style="margin:12px 0 4px">Préparation individuelle des bulletins</h3>
-  <p class="muted">Pour chaque élève, choisis son niveau en participation, comportement, matériel et travail personnel. Les critères sont indépendants pour chaque élève et chaque trimestre.</p>
+  <p class="muted">Pour chaque élève, sélectionne uniquement les observations qui le concernent : travail personnel, participation, matériel et comportement. Ajoute si besoin une observation personnelle.</p>
   <button class="primary" style="width:100%;margin-top:8px" onclick="prepareClassBulletins()">Préparer les appréciations de la classe</button>
   <div id="bulletinEditor" style="margin-top:10px"></div>
   <div class="row" style="margin-top:8px">
@@ -645,7 +645,7 @@ function bulletinData(s){
 function studentBulletinCriteria(s){
  const q=document.getElementById('bulletinQuarter')?.value||'T1';
  s.bulletinCriteria=s.bulletinCriteria||{};
- const d=s.bulletinCriteria[q]||(s.bulletinCriteria[q]={});const defaults={participation:'neutral',behavior:'neutral',material:'neutral',work:'neutral',attitude:'neutral',autonomy:'neutral',progress:'neutral',group:'neutral',musical:'neutral',listening:'neutral',creativity:'neutral',voice:'neutral',observation:''};Object.keys(defaults).forEach(k=>{if(d[k]===undefined)d[k]=defaults[k]});return d;
+ const d=s.bulletinCriteria[q]||(s.bulletinCriteria[q]={});const defaults={participation:'neutral',behavior:'neutral',material:'neutral',work:'neutral',observation:''};Object.keys(defaults).forEach(k=>{if(d[k]===undefined)d[k]=defaults[k]});if(d.participation==='positive')d.participation='very_good';else if(d.participation==='negative')d.participation='insufficient';if(d.behavior==='positive'||d.behavior==='negative')d.behavior='neutral';if(d.material==='positive')d.material='neutral';if(d.work==='positive')d.work='neutral';return d;
 }
 
 function bulletinFirstName(s){
@@ -701,139 +701,34 @@ function bulletinQuarterPrevious(q){return q==='T2'?'T1':q==='T3'?'T2':null}
 function bulletinEvolution(s,q,current,variant=0){
  const previous=bulletinQuarterPrevious(q);if(!previous)return '';
  const old=s.bulletinCriteria?.[previous];if(!old)return '';
- const labels={participation:'la participation',behavior:'l’attitude en classe',material:'la régularité du matériel',work:'le travail personnel',attitude:'l’attitude face au travail',autonomy:'l’autonomie',progress:'la progression',group:'le travail en groupe',musical:'l’engagement dans les projets musicaux',listening:'l’écoute et l’analyse',creativity:'la créativité',voice:'l’interprétation'};
- const changes=[];for(const [key,label] of Object.entries(labels)){const before=old[key],after=current[key];if(!before||!after||before==='neutral'||after==='neutral'||before===after)continue;
-  if(before==='negative'&&after==='positive')changes.push(`des progrès sont visibles concernant ${label}`);
-  else if(before==='positive'&&after==='negative')changes.push(`une vigilance reste nécessaire concernant ${label}`);
- }
- if(!changes.length)return '';
- const unique=[...new Set(changes)].slice(0,2);
- if(unique.length===1)return variant%2?`Par rapport au trimestre précédent, ${unique[0]}.`:`L’évolution depuis le trimestre précédent est encourageante : ${unique[0]}.`;
- return variant%2?`Depuis le trimestre précédent, ${unique[0]} et ${unique[1]}.`:`Le bilan évolue : ${unique[0]}, tandis que ${unique[1]}.`;
+ const keys=['participation','behavior','material','work'];
+ const changed=keys.filter(k=>old[k]&&current[k]&&old[k]!==current[k]&&old[k]!=='neutral'&&current[k]!=='neutral');
+ if(!changed.length)return '';
+ const labels={participation:'la participation',behavior:'le comportement',material:'les oublis de matériel',work:'le travail personnel'};
+ const improving=changed.filter(k=>old[k]==='negative'&&['positive','very_good'].includes(current[k]) || old[k]==='insufficient'&&current[k]==='very_good');
+ const worsening=changed.filter(k=>['positive','very_good'].includes(old[k])&&['negative','insufficient','chatter','interruptions'].includes(current[k]));
+ const parts=[];
+ if(improving.length)parts.push(`une amélioration concernant ${labels[improving[0]]}`);
+ if(worsening.length)parts.push(`un point de vigilance concernant ${labels[worsening[0]]}`);
+ if(!parts.length)return '';
+ return `Depuis le trimestre précédent, ${parts.join(' et ')}.`;
 }
 
 function buildAppreciation(s,variant=0){
- const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium';
- const c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
- const pick=a=>a[v%a.length];
- const sentences=[];
- // Start with an overall assessment grounded in the available results.
- if(d.avg===null){
-  sentences.push(pick([
-   `Le bilan de ${first} reste encore difficile à établir, car nous disposons de trop peu d'évaluations. Les prochaines activités permettront de mieux apprécier les acquis.`,
-   `Il est encore un peu tôt pour situer précisément le niveau de ${first}. Il faudra profiter des prochaines évaluations pour montrer les progrès réalisés.`,
-   `Avec peu de notes ce trimestre, le niveau de ${first} reste à préciser. Les prochaines séances permettront de faire un bilan plus juste.`
-  ]));
- }else if(d.avg>=16){
-  sentences.push(pick([
-   `Excellent trimestre pour ${first} ! Les résultats sont très solides et montrent une très bonne maîtrise des activités.`,
-   `${first} réalise un excellent trimestre. Le travail présenté est de grande qualité et les résultats le confirment.`,
-   `Un excellent bilan pour ${first}, avec des résultats réguliers et une très bonne réussite dans les activités proposées.`
-  ]));
- }else if(d.avg>=14){
-  sentences.push(pick([
-   `Très bon trimestre pour ${first}. Les résultats sont solides et le travail fourni permet de progresser avec régularité.`,
-   `${first} réalise un très bon trimestre. Les acquis sont bien installés et les résultats sont tout à fait satisfaisants.`,
-   `Le bilan de ${first} est très positif : les résultats sont bons et le travail permet d'avancer dans les apprentissages.`
-  ]));
- }else if(d.avg>=12){
-  sentences.push(pick([
-   `${first} réalise un trimestre satisfaisant. Les résultats sont encourageants et les acquis progressent.`,
-   `Le trimestre de ${first} est plutôt positif. Le travail réalisé permet de consolider progressivement les acquis.`,
-   `${first} obtient un bilan satisfaisant. Plusieurs réussites sont à souligner et les efforts doivent se poursuivre.`
-  ]));
- }else if(d.avg>=10){
-  sentences.push(pick([
-   `Le bilan de ${first} reste fragile. Les résultats montrent que certains points doivent encore être travaillés.`,
-   `${first} rencontre encore quelques difficultés. Des efforts plus réguliers aideront à consolider les acquis.`,
-   `Le trimestre est mitigé pour ${first}. Les bases sont présentes, mais il faut gagner en régularité pour progresser.`
-  ]));
- }else{
-  sentences.push(pick([
-   `Le trimestre de ${first} est difficile et les résultats restent insuffisants. Il faut reprendre les points qui posent problème et s'investir davantage.`,
-   `${first} éprouve encore des difficultés dans les activités. Un travail plus régulier sera nécessaire pour retrouver une dynamique positive.`,
-   `Les résultats de ${first} sont trop fragiles ce trimestre. Il est important de se mobiliser davantage pour progresser.`
-  ]));
- }
- // Only describe attitudes and habits that have actually been selected by the teacher.
+ const d=bulletinData(s),c=studentBulletinCriteria(s),first=bulletinFirstName(s);
+ const opening=d.avg===null?'Ensemble satisfaisant':d.avg>=14?'Très bon trimestre':d.avg>=12?'Bon trimestre':d.avg>=10?'Ensemble satisfaisant':'Ensemble décevant';
  const details=[];
- if(c.participation==='positive')details.push(pick([
-  `La participation est régulière et les interventions sont appréciées.`,
-  `La prise de part aux activités est spontanée et contribue au bon déroulement du cours.`,
-  `L'implication dans les activités et la participation sont de vrais points forts.`
- ]));
- else if(c.participation==='negative')details.push(pick([
-  `Il faudrait participer davantage et prendre une part plus active aux activités.`,
-  `Une participation plus régulière permettrait de profiter pleinement des séances.`,
-  `Il reste à oser davantage participer et à s'impliquer plus régulièrement.`
- ]));
- if(c.behavior==='positive')details.push(pick([
-  `L'attitude en classe est sérieuse et agréable.`,
-  `Le comportement est positif et permet de travailler dans de bonnes conditions.`,
-  `Le sérieux et l'attitude en classe sont appréciés.`
- ]));
- else if(c.behavior==='negative')details.push(pick([
-  `Il faudra veiller à adopter une attitude plus calme et attentive en classe.`,
-  `Une attitude plus adaptée au travail est attendue pour progresser dans de bonnes conditions.`,
-  `Davantage de calme et d'attention sont nécessaires pendant les séances.`
- ]));
- if(c.material==='positive')details.push(pick([
-  `Le matériel est apporté régulièrement, ce qui permet de travailler sereinement.`,
-  `Les affaires nécessaires sont présentes à chaque séance : c'est une bonne habitude.`,
-  `La préparation du matériel est régulière et appréciable.`
- ]));
- else if(c.material==='negative')details.push(pick([
-  `Les oublis de matériel sont encore trop fréquents et doivent être corrigés.`,
-  `Il faut penser à apporter le matériel demandé à chaque séance.`,
-  `Des oublis de matériel gênent parfois le travail ; il faudra être plus vigilant.`
- ]));
- if(c.work==='positive')details.push(pick([
-  `Le travail personnel est sérieux et régulier.`,
-  `Les efforts fournis en dehors du cours aident à consolider les acquis.`,
-  `Le travail personnel est satisfaisant et mérite d'être poursuivi.`
- ]));
- else if(c.work==='negative')details.push(pick([
-  `Le travail personnel doit être plus régulier pour consolider les apprentissages.`,
-  `Il faut approfondir davantage le travail personnel entre les séances.`,
-  `Un investissement plus régulier dans le travail personnel est nécessaire.`
- ]));
- // Additional personal characteristics, only when selected by the teacher.
- const profile=[
-  ['attitude','positive',` ${first} fait preuve d'une attitude positive face au travail et cherche à progresser.`,`L'attitude face au travail est encourageante.`],
-  ['attitude','negative',`${first} doit encore adopter une attitude plus régulière face au travail.`,`L'investissement dans le travail doit gagner en constance.`],
-  ['autonomy','positive',`${first} travaille avec autonomie et sait entrer dans les activités proposées.`,`L'autonomie est un point fort.`],
-  ['autonomy','negative',`${first} a encore besoin d'être guidé pour mener les activités jusqu'au bout.`,`Il faut progressivement gagner en autonomie.`],
-  ['progress','positive',`Les progrès de ${first} sont visibles et encourageants.`,`L'évolution au cours du trimestre est positive.`],
-  ['progress','negative',`Les progrès restent encore limités ; il faudra poursuivre les efforts avec régularité.`,`L'évolution est encore fragile et doit se poursuivre.`],
-  ['group','positive',`${first} trouve facilement sa place dans le travail collectif et contribue au projet du groupe.`,`Le travail collectif est un point positif.`],
-  ['group','negative',`${first} doit davantage écouter les autres et trouver sa place dans le travail de groupe.`,`La coopération avec les autres doit être améliorée.`],
-  ['musical','positive',`${first} s'engage avec sérieux dans les projets musicaux et participe à leur réalisation.`,`L'investissement dans les projets musicaux est appréciable.`],
-  ['musical','negative',`${first} doit s'impliquer davantage dans les projets musicaux pour en tirer pleinement profit.`,`L'engagement dans les projets musicaux doit être renforcé.`],
-  ['listening','positive',`${first} fait preuve d'une bonne qualité d'écoute et sait repérer des éléments musicaux pertinents.`,`L'écoute et l'attention aux œuvres sont de qualité.`],
-  ['listening','negative',`${first} doit développer son attention lors des écoutes et approfondir ses observations.`,`L'écoute doit devenir plus attentive et plus précise.`],
-  ['creativity','positive',`${first} fait preuve d'imagination et propose des idées intéressantes lors des activités de création.`,`La créativité et les propositions personnelles sont appréciées.`],
-  ['creativity','negative',`${first} gagnerait à proposer davantage d'idées personnelles dans les activités de création.`,`Il faut oser davantage prendre des initiatives dans les activités créatives.`],
-  ['voice','positive',`${first} progresse dans l'interprétation et s'applique à respecter les consignes musicales.`,`L'interprétation est sérieuse et de plus en plus maîtrisée.`],
-  ['voice','negative',`${first} doit poursuivre le travail sur l'interprétation et s'appliquer davantage dans les réalisations vocales ou instrumentales.`,`L'interprétation demande encore de l'entraînement et de la précision.`]
- ];
- profile.forEach(([key,val,a,b])=>{if(c[key]===val)details.push(v%2?a:b)});
+ if(c.work==='negative')details.push('Le manque de travail personnel doit être corrigé pour permettre de progresser.');
+ if(c.participation==='insufficient')details.push('La participation est insuffisante ; il faut davantage s’impliquer en classe.');
+ if(c.participation==='very_good')details.push('La participation de '+first+' est très bonne et contribue positivement au cours.');
+ if(c.material==='negative')details.push('Les oublis de matériel sont répétés et pénalisent le travail en classe.');
+ if(c.behavior==='chatter')details.push('Les bavardages sont trop fréquents et nuisent au bon déroulement du cours.');
+ if(c.behavior==='interruptions')details.push('Les prises de parole intempestives doivent cesser afin de respecter les échanges en classe.');
  if(c.observation&&String(c.observation).trim())details.push(String(c.observation).trim());
- // Combine related details into a readable paragraph, without repeating the pupil's name mechanically.
- if(details.length){
-  if(details.length===1)sentences.push(details[0]);
-  else if(details.length===2)sentences.push(details.join(' '));
-  else sentences.push(details.slice(0,2).join(' '),details.slice(2).join(' '));
- }
- const quarter=document.getElementById('bulletinQuarter')?.value||'T1';
- const evolution=bulletinEvolution(s,quarter,c,v);if(evolution)sentences.push(evolution);
- if(d.avg!==null){
-  if(d.avg>=16)sentences.push(pick([`Félicitations pour ce très bon travail !`,`Il faut poursuivre sur cette belle dynamique.`,`Continue ainsi, c'est un très beau trimestre.`]));
-  else if(d.avg>=12)sentences.push(pick([`Il faut poursuivre dans cette voie.`,`Les efforts sont à continuer au prochain trimestre.`,`Continue ainsi pour consolider ces acquis.`]));
-  else sentences.push(pick([`Je compte sur ${first} pour poursuivre ses efforts au prochain trimestre.`,`Il ne faut pas se décourager : davantage de régularité permettra de progresser.`,`Les efforts doivent se poursuivre pour améliorer le prochain bilan.`]));
- }
- if(len==='short')return sentences.slice(0,Math.min(2,sentences.length)).join(' ');
- if(len==='medium'&&sentences.length>4)return sentences.slice(0,4).join(' ');
- return sentences.join(' ');
+ const evolution=bulletinEvolution(s,document.getElementById('bulletinQuarter')?.value||'T1',c);
+ if(evolution)details.push(evolution);
+ const personal=details.length?` ${details.join(' ')}`:'';
+ return `${opening} pour ${first}.${personal}`.trim();
 }
 
 function prepareClassBulletins(){
@@ -845,7 +740,12 @@ function prepareClassBulletins(){
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
  const opts=(v,pos,neg)=>`<option value="neutral" ${v==='neutral'?'selected':''}>À définir</option><option value="positive" ${v==='positive'?'selected':''}>${pos}</option><option value="negative" ${v==='negative'?'selected':''}>${neg}</option>`;
- box.innerHTML=bulletinDrafts.map((b,i)=>{const student=cls().students.find(x=>x.id===b.id);return `<div class="bulletin-card"><div class="bulletin-student-head">${student?.photo?`<img class="bulletin-student-photo" src="${student.photo}" alt="Photo de ${esc(b.name)}">`:`<div class="bulletin-student-photo" aria-label="Photo non disponible"></div>`}<div><b>${esc(b.name)}</b><div class="muted">${student?.photo?`Photo de l’élève`:`Aucune photo enregistrée`}</div></div></div><div class="grid" style="margin-top:8px"><div><label>Participation</label><select data-crit="participation" data-index="${i}">${opts(b.criteria.participation,'Participe volontiers','Reste trop discret')}</select></div><div><label>Comportement</label><select data-crit="behavior" data-index="${i}">${opts(b.criteria.behavior,'Attitude positive','À améliorer')}</select></div><div><label>Matériel</label><select data-crit="material" data-index="${i}">${opts(b.criteria.material,'Apporté régulièrement','Oublis fréquents')}</select></div><div><label>Travail personnel</label><select data-crit="work" data-index="${i}">${opts(b.criteria.work,'Suffisant','Insuffisant')}</select></div><div><label>Attitude face au travail</label><select data-crit="attitude" data-index="${i}">${opts(b.criteria.attitude,'Volontaire et motivé','Manque de régularité')}</select></div><div><label>Autonomie</label><select data-crit="autonomy" data-index="${i}">${opts(b.criteria.autonomy,'Autonome','A besoin d’aide')}</select></div><div><label>Évolution</label><select data-crit="progress" data-index="${i}">${opts(b.criteria.progress,'Progrès visibles','Progrès à confirmer')}</select></div><div><label>Travail en groupe</label><select data-crit="group" data-index="${i}">${opts(b.criteria.group,'Coopère bien','À améliorer')}</select></div><div><label>Engagement musical</label><select data-crit="musical" data-index="${i}">${opts(b.criteria.musical,'Très investi','Doit s’impliquer')}</select></div><div><label>Écoute et analyse</label><select data-crit="listening" data-index="${i}">${opts(b.criteria.listening,'Bonne écoute','À approfondir')}</select></div><div><label>Créativité</label><select data-crit="creativity" data-index="${i}">${opts(b.criteria.creativity,'Imaginatif','Doit proposer davantage')}</select></div><div><label>Interprétation</label><select data-crit="voice" data-index="${i}">${opts(b.criteria.voice,'Sérieuse et maîtrisée','À travailler')}</select></div></div><label style="display:block;margin-top:8px">Observation personnelle (facultative)</label><textarea data-observation="${i}" placeholder="Un détail précis sur cet élève…">${esc(b.criteria.observation||'')}</textarea><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`}).join('');
+ box.innerHTML=bulletinDrafts.map((b,i)=>{const student=cls().students.find(x=>x.id===b.id);return `<div class="bulletin-card"><div class="bulletin-student-head">${student?.photo?`<img class="bulletin-student-photo" src="${student.photo}" alt="Photo de ${esc(b.name)}">`:`<div class="bulletin-student-photo" aria-label="Photo non disponible"></div>`}<div><b>${esc(b.name)}</b><div class="muted">${student?.photo?`Photo de l’élève`:`Aucune photo enregistrée`}</div></div></div><div class="grid" style="margin-top:8px">
+ <div><label>Travail personnel</label><select data-crit="work" data-index="${i}"><option value="neutral" ${b.criteria.work==='neutral'?'selected':''}>À définir</option><option value="negative" ${b.criteria.work==='negative'?'selected':''}>Manque de travail personnel</option></select></div>
+ <div><label>Participation</label><select data-crit="participation" data-index="${i}"><option value="neutral" ${b.criteria.participation==='neutral'?'selected':''}>À définir</option><option value="insufficient" ${b.criteria.participation==='insufficient'?'selected':''}>Participation insuffisante</option><option value="very_good" ${b.criteria.participation==='very_good'?'selected':''}>Très bonne participation</option></select></div>
+ <div><label>Matériel</label><select data-crit="material" data-index="${i}"><option value="neutral" ${b.criteria.material==='neutral'?'selected':''}>À définir</option><option value="negative" ${b.criteria.material==='negative'?'selected':''}>Oublis de matériel répétés</option></select></div>
+ <div><label>Comportement</label><select data-crit="behavior" data-index="${i}"><option value="neutral" ${b.criteria.behavior==='neutral'?'selected':''}>À définir</option><option value="chatter" ${b.criteria.behavior==='chatter'?'selected':''}>Trop de bavardages</option><option value="interruptions" ${b.criteria.behavior==='interruptions'?'selected':''}>Prises de parole intempestives</option></select></div>
+ </div><label style="display:block;margin-top:8px">Observation personnelle (facultative)</label><textarea data-observation="${i}" placeholder="Un détail précis sur cet élève…">${esc(b.criteria.observation||'')}</textarea><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`}).join('');
  box.querySelectorAll('select[data-crit]').forEach(el=>el.onchange=()=>{const b=bulletinDrafts[+el.dataset.index],s=cls().students.find(x=>x.id===b.id);b.criteria[el.dataset.crit]=el.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
  box.querySelectorAll('textarea[data-observation]').forEach(t=>t.oninput=()=>{const b=bulletinDrafts[+t.dataset.observation],s=cls().students.find(x=>x.id===b.id);b.criteria.observation=t.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
  box.querySelectorAll('textarea[data-bulletin]').forEach(t=>t.oninput=()=>bulletinDrafts[+t.dataset.bulletin].text=t.value);
