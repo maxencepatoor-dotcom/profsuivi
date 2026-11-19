@@ -147,7 +147,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
  </div>
  <div class="panel">
   <h2>Bilan et appréciations pour le bulletin Pronote</h2>
-  <p class="muted">Prépare une proposition à partir des notes, de la participation, des événements et de tes observations. Chaque texte reste modifiable avant export.</p>
+  <p class="muted">Prépare une proposition à partir des résultats disponibles et de tes observations. En T2 et T3, les critères renseignés peuvent aussi faire apparaître une évolution depuis le trimestre précédent. Chaque texte reste modifiable avant export.</p>
   <div class="grid">
    <div><label>Trimestre</label><select id="bulletinQuarter" onchange="loadQuarterSettings()"><option value="T1">Trimestre 1</option><option value="T2">Trimestre 2</option><option value="T3">Trimestre 3</option></select></div>
    <div><label>Longueur souhaitée</label><select id="bulletinLength"><option value="short">Courte</option><option value="medium" selected>Standard</option><option value="long">Détaillée</option></select></div>
@@ -697,6 +697,21 @@ function bulletinSentenceBank(s,c,first,variant){
  ][variant%3]);
  return bank;
 }
+function bulletinQuarterPrevious(q){return q==='T2'?'T1':q==='T3'?'T2':null}
+function bulletinEvolution(s,q,current,variant=0){
+ const previous=bulletinQuarterPrevious(q);if(!previous)return '';
+ const old=s.bulletinCriteria?.[previous];if(!old)return '';
+ const labels={participation:'la participation',behavior:'l’attitude en classe',material:'la régularité du matériel',work:'le travail personnel',attitude:'l’attitude face au travail',autonomy:'l’autonomie',progress:'la progression',group:'le travail en groupe',musical:'l’engagement dans les projets musicaux',listening:'l’écoute et l’analyse',creativity:'la créativité',voice:'l’interprétation'};
+ const changes=[];for(const [key,label] of Object.entries(labels)){const before=old[key],after=current[key];if(!before||!after||before==='neutral'||after==='neutral'||before===after)continue;
+  if(before==='negative'&&after==='positive')changes.push(`des progrès sont visibles concernant ${label}`);
+  else if(before==='positive'&&after==='negative')changes.push(`une vigilance reste nécessaire concernant ${label}`);
+ }
+ if(!changes.length)return '';
+ const unique=[...new Set(changes)].slice(0,2);
+ if(unique.length===1)return variant%2?`Par rapport au trimestre précédent, ${unique[0]}.`:`L’évolution depuis le trimestre précédent est encourageante : ${unique[0]}.`;
+ return variant%2?`Depuis le trimestre précédent, ${unique[0]} et ${unique[1]}.`:`Le bilan évolue : ${unique[0]}, tandis que ${unique[1]}.`;
+}
+
 function buildAppreciation(s,variant=0){
  const d=bulletinData(s),len=document.getElementById('bulletinLength')?.value||'medium';
  const c=studentBulletinCriteria(s),first=bulletinFirstName(s),v=Math.max(0,variant|0);
@@ -809,6 +824,8 @@ function buildAppreciation(s,variant=0){
   else if(details.length===2)sentences.push(details.join(' '));
   else sentences.push(details.slice(0,2).join(' '),details.slice(2).join(' '));
  }
+ const quarter=document.getElementById('bulletinQuarter')?.value||'T1';
+ const evolution=bulletinEvolution(s,quarter,c,v);if(evolution)sentences.push(evolution);
  if(d.avg!==null){
   if(d.avg>=16)sentences.push(pick([`Félicitations pour ce très bon travail !`,`Il faut poursuivre sur cette belle dynamique.`,`Continue ainsi, c'est un très beau trimestre.`]));
   else if(d.avg>=12)sentences.push(pick([`Il faut poursuivre dans cette voie.`,`Les efforts sont à continuer au prochain trimestre.`,`Continue ainsi pour consolider ces acquis.`]));
