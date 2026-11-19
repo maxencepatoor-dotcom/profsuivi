@@ -108,7 +108,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
   <div class="row between"><div><h2>Mes classes</h2><div class="muted" id="classSummary"></div></div><button class="primary small" onclick="toggleAddClass()">+ Ajouter</button></div>
   <div id="addClassForm" class="class-add-form hidden"><input id="newClassName" placeholder="Ex. 5e A" maxlength="40"><button class="primary" onclick="createClassFromForm()">Créer</button></div>
   <div class="class-toolbar">
-   <input id="classSearch" class="class-search" placeholder="Rechercher une classe…" oninput="renderClasses()">
+   <input id="classSearch" class="class-search" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher une classe…" oninput="renderClasses()">
    <select id="classSort" aria-label="Trier les classes" onchange="renderClasses()"><option value="name">Ordre alphabétique</option><option value="count">Plus d'élèves</option><option value="recent">Dernière créée</option></select>
    <button class="small" onclick="clearClassSearch()">Réinitialiser</button>
   </div>
@@ -1155,23 +1155,23 @@ function confirmPhotoGradeImport(){
  save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' élève(s). Les notes incomplètes ont été ignorées.';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];pendingUnassignedPhotoTotals=[];renderRoster();
 }
 
-// V6.9.9 — prevent a stale/autofilled class search from hiding the saved classes.
+// V7.8.3 — prevent browser autofill/BFCache from leaving a stale class filter active.
+// The reset only clears the search field; it never changes saved classes or student data.
 function restoreClassListIfHidden(){
  const input=document.getElementById('classSearch');
- if(!input)return;
- const q=(input.value||'').trim().toLowerCase();
- if(q && db.classes.length && !db.classes.some(c=>String(c.name||'').toLowerCase().includes(q))){
-  input.value='';
- }
+ if(input) input.value='';
  renderClasses();
 }
 (function(){
  const input=document.getElementById('classSearch');
- if(input)input.value='';
+ if(input){ input.value=''; input.setAttribute('autocomplete','off'); }
  restoreClassListIfHidden();
  decorateDashboard();
  window.addEventListener('pageshow',()=>{
   if(page==='classes')restoreClassListIfHidden();
+ });
+ document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && page==='classes')restoreClassListIfHidden();
  });
 })();
 
