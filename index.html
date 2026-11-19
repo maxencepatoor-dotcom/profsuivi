@@ -92,6 +92,9 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 .hud{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:14px}.hud-tile{background:linear-gradient(145deg,#fff,#f7f9ff);border:1px solid #e2e8f4;border-radius:16px;padding:12px;box-shadow:0 4px 14px #1d32600a;min-width:0}.hud-top{display:flex;align-items:center;justify-content:space-between;gap:6px}.hud-icon{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;background:#edf2ff;color:#315ee8}.hud-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.hud-value{font-size:23px;font-weight:850;letter-spacing:-.04em;margin-top:8px;color:#172b5d}.hud-label{font-size:11px;color:#6b7890;font-weight:650;margin-top:1px}.hud-caption{font-size:10px;color:#98a3b5;margin-top:4px}
 .section-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8794aa;font-weight:800;margin:0 0 8px 2px}.bottom button:focus-visible,button:focus-visible{outline:3px solid #7c9aff;outline-offset:2px}
 @media(max-width:390px){.hud{gap:6px}.hud-tile{padding:9px}.hud-value{font-size:20px}.hud-label{font-size:10px}.brandtitle{font-size:19px}}
+
+/* V7.9.0 — générateur progressif de séquences */
+.seq-stepper{display:flex;gap:6px;overflow:auto;padding:4px 0 12px}.seq-step{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:12px;background:#f8fafc;color:#475569}.seq-step.current{background:#172554;color:#fff;border-color:#172554}.seq-step.done{background:#dcfce7;color:#166534;border-color:#bbf7d0}.seq-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin:9px 0;background:#fff}.seq-card h3{margin-bottom:5px}.seq-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.seq-actions button{flex:1}.seq-preview{white-space:pre-wrap;line-height:1.5;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px}.seq-library-item{border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0;background:#fff}.seq-library-item p{margin:5px 0;color:var(--muted);font-size:12px}
 </style>
 </head>
 <body>
@@ -213,6 +216,14 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
  <div id="studentDetail"></div>
 </section>
 
+
+<section id="sequenceView" class="hidden">
+ <div class="panel">
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V7.9.0</span></div>
+  <div id="sequenceHome"></div>
+ </div>
+</section>
+
 <section id="settingsView" class="hidden">
  <div class="panel"><h2>Données et sauvegardes</h2>
   <p class="muted">Les données sont enregistrées dans le stockage du navigateur sur cet iPhone. Elles ne sont pas envoyées au site qui héberge les fichiers de l'application.</p>
@@ -228,6 +239,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 <nav class="bottom"><div class="bottominner">
 <button id="navClasses" class="active" onclick="go('classes')"><span class="nav-icon" data-icon="classes"></span><span>Classes</span></button>
 <button id="navRoster" onclick="go('roster')"><span class="nav-icon" data-icon="users"></span><span>Élèves</span></button>
+<button id="navSequences" onclick="go('sequences')"><span class="nav-icon" data-icon="book"></span><span>Séquences</span></button>
 <button id="navSettings" onclick="go('settings')"><span class="nav-icon" data-icon="settings"></span><span>Sauvegarde</span></button>
 </div></nav>
 <script>
@@ -243,7 +255,7 @@ function uiIcon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true">${UI_I
 function decorateDashboard(){document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=uiIcon(el.dataset.icon)});document.querySelectorAll('h2').forEach(el=>{if(el.querySelector('.heading-icon'))return;const t=el.textContent.toLowerCase();let k=t.includes('classe')?'classes':t.includes('élève')?'users':t.includes('séance')||t.includes('évaluation')?'chart':t.includes('bulletin')||t.includes('appréciation')?'clipboard':t.includes('sauvegarde')?'settings':t.includes('historique')?'book':null;if(k){const s=document.createElement('span');s.className='heading-icon';s.innerHTML=uiIcon(k);el.prepend(s)}})}
 function cls(){return db.classes.find(c=>c.id===currentClass)}
 function student(){return cls()?.students.find(s=>s.id===currentStudent)}
-function go(p){page=p;['classes','roster','student','settings'].forEach(x=>document.getElementById(x+'View').classList.toggle('hidden',x!==p));['Classes','Roster','Settings'].forEach(x=>document.getElementById('nav'+x).classList.toggle('active',p===x.toLowerCase()));if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='settings'){}decorateDashboard()}
+function go(p){page=p;['classes','roster','student','settings','sequence'].forEach(x=>{const el=document.getElementById(x+'View');if(el)el.classList.toggle('hidden',x!==(p==='sequences'?'sequence':p))});['Classes','Roster','Sequences','Settings'].forEach(x=>{const el=document.getElementById('nav'+x);if(el)el.classList.toggle('active',p===x.toLowerCase())});if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='sequences')renderSequenceHome();decorateDashboard()}
 function toggleAddClass(){let f=document.getElementById('addClassForm');f.classList.toggle('hidden');if(!f.classList.contains('hidden'))document.getElementById('newClassName').focus()}
 function createClassFromForm(){let input=document.getElementById('newClassName'),n=input.value.trim();if(!n)return alert('Saisis le nom de la classe.');if(db.classes.some(c=>c.name.toLowerCase()===n.toLowerCase()))return alert('Cette classe existe déjà.');db.classes.push({id:uid(),name:n,students:[]});save();input.value='';document.getElementById('addClassForm').classList.add('hidden');renderClasses()}
 function newClass(){toggleAddClass()}
@@ -1155,7 +1167,42 @@ function confirmPhotoGradeImport(){
  save();document.getElementById('gradePhotoStatus').textContent='Import terminé : '+ready.length+' élève(s). Les notes incomplètes ont été ignorées.';document.getElementById('gradePhotoReview').innerHTML='';pendingPhotoGrades=[];pendingUnassignedPhotoTotals=[];renderRoster();
 }
 
-// V7.8.3 — prevent browser autofill/BFCache from leaving a stale class filter active.
+
+// V7.9.0 — Générateur progressif. Les séquences sont conservées dans la sauvegarde locale ProfSuivi.
+const SEQ_STEPS=[
+ {title:'Définition',hint:'Niveau, thème, durée et intention pédagogique.'},
+ {title:'Œuvres',hint:'Sélection des œuvres et justification de leur intérêt.'},
+ {title:'Problématique',hint:'Question centrale qui donne une cohérence à la séquence.'},
+ {title:'Projet musical',hint:'Production attendue, organisation et critères de réussite.'},
+ {title:'Compétences',hint:'Compétences et apprentissages réellement travaillés.'},
+ {title:'Séances',hint:'Progression détaillée séance par séance.'},
+ {title:'Fiches & évaluations',hint:'Supports élèves, corrigés, évaluations et barèmes.'}
+];
+function seqStore(){db.sequenceLibrary=db.sequenceLibrary||[];db.sequenceDraft=db.sequenceDraft||null;return db}
+function newSequenceDraft(){seqStore();db.sequenceDraft={id:uid(),title:'',level:'5e',duration:'6 séances',theme:'',intent:'',works:'',worksNotes:'',problem:'',project:'',criteria:'',skills:'',lessons:'',studentSheets:'',teacherNotes:'',assessment:'',step:0,updatedAt:new Date().toISOString()};save();renderSequenceHome()}
+function renderSequenceHome(){const box=document.getElementById('sequenceHome');if(!box)return;seqStore();let d=db.sequenceDraft,lib=db.sequenceLibrary||[];box.innerHTML=`<div class="seq-card"><h3>Créer une nouvelle séquence</h3><p class="muted">Assistant guidé en 7 étapes, avec validation progressive et sauvegarde automatique.</p><button class="primary" style="width:100%" onclick="newSequenceDraft()">+ Nouvelle séquence</button>${d?`<button style="width:100%;margin-top:7px" onclick="openSequenceDraft()">Reprendre : ${esc(d.title||d.theme||'Séquence sans titre')}</button>`:''}</div><h3 style="margin-top:16px">Ma bibliothèque (${lib.length})</h3>${lib.length?lib.slice().reverse().map(x=>`<div class="seq-library-item"><b>${esc(x.title||'Séquence sans titre')}</b><p>${esc(x.level||'')} · ${esc(x.duration||'')} · ${esc(x.theme||'')}</p><div class="row"><button class="small" onclick="viewSavedSequence('${x.id}')">Consulter</button><button class="small" onclick="duplicateSavedSequence('${x.id}')">Dupliquer</button><button class="small softred" onclick="deleteSavedSequence('${x.id}')">Supprimer</button></div></div>`).join(''):'<p class="muted">Aucune séquence enregistrée pour le moment.</p>'}`}
+function openSequenceDraft(){if(!db.sequenceDraft)return;renderSequenceStep()}
+function seqField(id,label,value,placeholder='',multi=false){return `<label>${label}</label>${multi?`<textarea id="${id}" placeholder="${placeholder}" oninput="updateSequenceDraft()">${esc(value||'')}</textarea>`:`<input id="${id}" value="${esc(value||'')}" placeholder="${placeholder}" oninput="updateSequenceDraft()">`}`}
+function updateSequenceDraft(){let d=db.sequenceDraft;if(!d)return;['title','level','duration','theme','intent','works','worksNotes','problem','project','criteria','skills','lessons','studentSheets','teacherNotes','assessment'].forEach(k=>{let el=document.getElementById('seq_'+k);if(el)d[k]=el.value});d.updatedAt=new Date().toISOString();save()}
+function renderSequenceStep(){let d=db.sequenceDraft;if(!d)return renderSequenceHome();let n=Math.max(0,Math.min(6,Number(d.step)||0)),content='';
+ if(n===0)content=`${seqField('seq_title','Titre de la séquence',d.title,'Ex. L’évolution du rap') }<div class="grid"><div><label>Niveau</label><select id="seq_level" onchange="updateSequenceDraft()">${['6e','5e','4e','3e','3e SEGPA'].map(x=>`<option ${d.level===x?'selected':''}>${x}</option>`).join('')}</select></div><div><label>Durée</label><select id="seq_duration" onchange="updateSequenceDraft()">${['3 séances','4 séances','5 séances','6 séances','7 séances','8 séances','9 séances','10 séances'].map(x=>`<option ${d.duration===x?'selected':''}>${x}</option>`).join('')}</select></div></div>${seqField('seq_theme','Thème / notion musicale',d.theme,'Ex. L’évolution du rap')}${seqField('seq_intent','Intention pédagogique',d.intent,'Qu’aimerais-tu que les élèves comprennent ou sachent faire ?',true)}`;
+ if(n===1)content=`${seqField('seq_works','Œuvres retenues',d.works,'Une œuvre par ligne : titre – artiste – année',true)}${seqField('seq_worksNotes','Pourquoi ces œuvres ?',d.worksNotes,'Intérêt musical, comparaison, contexte, points d’écoute…',true)}<div class="notice">Conseil : vérifie les titres, versions, dates et disponibilités des extraits avant de valider. Cette première version ne vérifie pas automatiquement les catalogues musicaux.</div>`;
+ if(n===2)content=seqField('seq_problem','Problématique centrale',d.problem,'Ex. Comment le rap a-t-il évolué depuis ses origines ?',true)+`<p class="muted">Elle doit être compréhensible par les élèves et pouvoir trouver une réponse grâce aux œuvres et aux activités de la séquence.</p>`;
+ if(n===3)content=seqField('seq_project','Projet musical et consigne élève',d.project,'Décris la production finale, les contraintes et l’organisation.',true)+seqField('seq_criteria','Critères de réussite',d.criteria,'Un critère par ligne, avec points si besoin.',true);
+ if(n===4)content=seqField('seq_skills','Compétences et apprentissages',d.skills,'Compétences du programme, savoir-faire musicaux et vocabulaire.',true);
+ if(n===5)content=seqField('seq_lessons','Progression détaillée',d.lessons,'Séance 1 : objectif, œuvre, activité, trace écrite…\nSéance 2 : …',true);
+ if(n===6)content=seqField('seq_studentSheets','Fiches élèves',d.studentSheets,'Consignes, questions d’écoute, exercices et espaces de réponse.',true)+seqField('seq_teacherNotes','Fiches professeur / corrigés',d.teacherNotes,'Réponses attendues, points d’écoute, repères et différenciation.',true)+seqField('seq_assessment','Évaluations et barèmes',d.assessment,'Évaluation diagnostique, formative, sommative et barème.',true);
+ document.getElementById('sequenceHome').innerHTML=`<div class="row between"><button class="small" onclick="renderSequenceHome()">← Bibliothèque</button><span class="pill">Étape ${n+1}/7</span></div><div class="seq-stepper">${SEQ_STEPS.map((x,i)=>`<button class="seq-step ${i===n?'current':i<n?'done':''}" onclick="sequenceGoStep(${i})">${i+1}. ${x.title}</button>`).join('')}</div><h3>${SEQ_STEPS[n].title}</h3><p class="muted">${SEQ_STEPS[n].hint}</p><div class="seq-card">${content}</div><div class="seq-actions">${n?'<button onclick="sequenceGoStep('+(n-1)+')">← Précédent</button>':''}${n<6?'<button class="primary" onclick="sequenceNext()">Enregistrer et continuer →</button>':'<button class="primary" onclick="saveCompletedSequence()">Enregistrer dans ma bibliothèque</button>'}</div><p class="muted" style="margin-top:8px">Brouillon enregistré automatiquement sur cet appareil. Dernière modification : ${new Date(d.updatedAt||Date.now()).toLocaleString('fr-FR')}</p>`;
+}
+function sequenceGoStep(i){updateSequenceDraft();db.sequenceDraft.step=i;save();renderSequenceStep()}
+function sequenceNext(){updateSequenceDraft();let d=db.sequenceDraft;if(d.step===0&&(!d.title.trim()||!d.theme.trim()))return alert('Renseigne au minimum le titre et le thème.');if(d.step===1&&!d.works.trim())return alert('Ajoute au moins une œuvre, même provisoire.');d.step=Math.min(6,d.step+1);save();renderSequenceStep()}
+function saveCompletedSequence(){updateSequenceDraft();let d=db.sequenceDraft;if(!d.title.trim()||!d.theme.trim())return alert('Le titre et le thème sont nécessaires.');let saved={...d,savedAt:new Date().toISOString()};delete saved.step;db.sequenceLibrary=db.sequenceLibrary||[];if(d.editingId){const ix=db.sequenceLibrary.findIndex(x=>x.id===d.editingId);if(ix>=0)db.sequenceLibrary[ix]=saved;else db.sequenceLibrary.push(saved)}else db.sequenceLibrary.push(saved);db.sequenceDraft=null;save();renderSequenceHome();alert('Séquence enregistrée dans la bibliothèque locale ProfSuivi.')}
+function viewSavedSequence(id){let x=(db.sequenceLibrary||[]).find(a=>a.id===id);if(!x)return;let fields=[['Définition',['title','level','duration','theme','intent']],['Œuvres',['works','worksNotes']],['Problématique',['problem']],['Projet musical',['project','criteria']],['Compétences',['skills']],['Séances',['lessons']],['Fiches et évaluations',['studentSheets','teacherNotes','assessment']]];document.getElementById('sequenceHome').innerHTML=`<button class="small" onclick="renderSequenceHome()">← Bibliothèque</button><h2 style="margin-top:12px">${esc(x.title)}</h2>${fields.map(([t,keys])=>`<div class="seq-card"><h3>${t}</h3>${keys.filter(k=>x[k]).map(k=>`<p><b>${esc(({title:'Titre',level:'Niveau',duration:'Durée',theme:'Thème',intent:'Intention',works:'Œuvres',worksNotes:'Justification',problem:'Problématique',project:'Projet',criteria:'Critères',skills:'Compétences',lessons:'Progression',studentSheets:'Fiches élèves',teacherNotes:'Fiche professeur',assessment:'Évaluations'})[k])}</b></p><div class="seq-preview">${esc(x[k])}</div>`).join('')}</div>`).join('')}<button class="primary" style="width:100%" onclick="editSavedSequence('${x.id}')">Modifier cette séquence</button>`}
+function editSavedSequence(id){let x=(db.sequenceLibrary||[]).find(a=>a.id===id);if(!x)return;db.sequenceDraft={...x,editingId:id,step:0};save();renderSequenceStep()}
+function duplicateSavedSequence(id){let x=(db.sequenceLibrary||[]).find(a=>a.id===id);if(!x)return;let y={...x,id:uid(),title:x.title+' (copie)',step:0};delete y.savedAt;db.sequenceDraft=y;save();renderSequenceStep()}
+function deleteSavedSequence(id){if(!confirm('Supprimer cette séquence enregistrée ?'))return;db.sequenceLibrary=(db.sequenceLibrary||[]).filter(x=>x.id!==id);save();renderSequenceHome()}
+
+// V7.9.0 — prevent browser autofill/BFCache from leaving a stale class filter active.
 // The reset only clears the search field; it never changes saved classes or student data.
 function restoreClassListIfHidden(){
  const input=document.getElementById('classSearch');
