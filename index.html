@@ -125,7 +125,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.3</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -274,7 +274,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.2</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.3</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -359,70 +359,132 @@ function getScheduleFile(){return document.getElementById('schedulePhoto').files
 let pendingScheduleCells=[];
 function previewSchedulePhoto(input){const f=input.files?.[0],box=document.getElementById('schedulePhotoPreview');if(!f)return;document.getElementById(input.id==='schedulePhoto'?'scheduleCamera':'schedulePhoto').value='';box.textContent=f.name+' · '+Math.round(f.size/1024)+' Ko';if(f.type.startsWith('image/')){const u=URL.createObjectURL(f);box.innerHTML=`<div>${esc(f.name)} · ${Math.round(f.size/1024)} Ko</div><img src="${u}" alt="Aperçu de l'emploi du temps" style="max-width:100%;max-height:260px;border-radius:12px;margin-top:8px">`}}
 function scheduleNormalizeLabel(s){
- let v=String(s||'').replace(/[\[\]{}()]/g,' ').replace(/[|]/g,'I').replace(/\s+/g,' ').trim().toUpperCase();
- v=v.replace(/^S(?=[A-Z0-9])/,'5').replace(/^([3456])8[-_]*$/,'$1B').replace(/^([3456])8(?=$|\s)/,'$1B').replace(/^4(?=8(?:\s|$))/,'4B');
- v=v.replace(/^([3456])\s*([A-Z])(?:[-_]+)?$/,'$1$2').replace(/\b([3456])\s*E(?:ME)?\b/g,'$1E').replace(/\b([3456])\s*([A-Z])\b/g,'$1$2');
- v=v.replace(/[^A-Z0-9 ]/g,'').trim();
+ const original=String(s||'').trim(),canonical=original.match(/^([3456])e\s+(.+)$/i);
+ if(canonical)return canonical[1]+'e '+canonical[2].toUpperCase();
+ let v=String(s||'').replace(/[\[\]{}()]/g,' ').replace(/[|]/g,'I').replace(/[-‐‑‒–—_]+/g,' ').replace(/\s+/g,' ').trim().toUpperCase();
+ // Typical Pronote OCR confusions: 5 is often read as S and B as 8.
+ v=v.replace(/^S(?=[A-Z0-9])/,'5');
+ v=v.replace(/^([3456])\s*8(?:\s|$)/,'$1B ');
+ v=v.replace(/^([3456])\s*E(?:ME)?$/,'$1E');
+ v=v.replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim();
  if(/^4E?DMUSI/.test(v)||/^4EDMUS/.test(v))return '4e';
- if(/^([3456])([A-Z])$/.test(v))return v[1]+v[2];
- if(/^([3456])E$/.test(v))return v[1]+'e';
+ const level=v.match(/^([3456])E(?:\s+(.*))?$/);
+ if(level)return level[1]+'e E'+(level[2]?' '+level[2]:'');
+ const m=v.match(/^([3456])([A-Z])(?:\s+(.*))?$/);
+ if(m)return m[1]+'e '+m[2]+(m[3]?' '+m[3]:'');
+ // OCR can retain a trailing artefact after a simple class code.
+ const compact=v.replace(/\s/g,'');
+ const c=compact.match(/^([3456])([A-Z])[-]*$/);
+ if(c)return c[1]+'e '+c[2];
  return v;
 }
-function scheduleClassName(label){
- const v=scheduleNormalizeLabel(label);
- if(/^[3456]E [A-Z0-9]+$/.test(v)||/^[3456]E$/.test(v))return v;
- const m=v.match(/^([3456])([A-Z0-9]+)$/);return m?m[1]+'e '+m[2]:v;
+function scheduleClassName(label){return scheduleNormalizeLabel(label)}
+function scheduleProjectionLines(values,threshold){
+ const runs=[];let begin=-1,sum=0,count=0;
+ for(let i=0;i<values.length;i++){
+  if(values[i]>=threshold){if(begin<0)begin=i;sum+=i;count++}
+  else if(begin>=0){runs.push({at:sum/count,size:count});begin=-1;sum=0;count=0}
+ }
+ if(begin>=0)runs.push({at:sum/count,size:count});
+ return runs.map(x=>Math.round(x.at));
+}
+function scheduleBestLineSet(lines,wanted){
+ if(lines.length<wanted)return null;
+ if(lines.length===wanted)return lines;
+ let best=null,bestScore=Infinity;
+ for(let i=0;i<=lines.length-wanted;i++){
+  const a=lines.slice(i,i+wanted),g=[];
+  for(let j=1;j<a.length;j++)g.push(a[j]-a[j-1]);
+  const mean=g.reduce((x,y)=>x+y,0)/g.length,variance=g.reduce((x,y)=>x+(y-mean)**2,0)/g.length;
+  const score=variance/(mean*mean);
+  if(score<bestScore){bestScore=score;best=a}
+ }
+ return best;
+}
+function findPronoteGrid(canvas){
+ const w=canvas.width,h=canvas.height,ctx=canvas.getContext('2d',{willReadFrequently:true});
+ // Search only the central page area, away from browser chrome and Pronote's header.
+ const xa=Math.round(w*.02),xb=Math.round(w*.82),ya=Math.round(h*.14),yb=Math.round(h*.90);
+ const rw=xb-xa,rh=yb-ya,data=ctx.getImageData(xa,ya,rw,rh).data;
+ const rows=new Uint32Array(rh),cols=new Uint32Array(rw);
+ for(let y=0;y<rh;y++)for(let x=0;x<rw;x++){
+  const k=(y*rw+x)*4,r=data[k],g=data[k+1],b=data[k+2];
+  if((r+g+b)/3<175){rows[y]++;cols[x]++}
+ }
+ const rowLines=scheduleBestLineSet(scheduleProjectionLines(rows,Math.max(20,rw*.48)),11);
+ const colLines=scheduleBestLineSet(scheduleProjectionLines(cols,Math.max(20,rh*.48)),6);
+ if(!rowLines||!colLines)return null;
+ const xs=colLines.map(x=>x+xa),ys=rowLines.map(y=>y+ya);
+ const dx=xs.slice(1).map((x,i)=>x-xs[i]),dy=ys.slice(1).map((y,i)=>y-ys[i]);
+ const avg=a=>a.reduce((p,c)=>p+c,0)/a.length;
+ if(Math.max(...dx)-Math.min(...dx)>avg(dx)*.22||Math.max(...dy)-Math.min(...dy)>avg(dy)*.22)return null;
+ return {xs,ys};
+}
+function scheduleCellIsOccupied(ctx,left,top,right,bottom){
+ const x0=Math.round(left+(right-left)*.13),x1=Math.round(right-(right-left)*.13);
+ const y0=Math.round(top+(bottom-top)*.13),y1=Math.round(bottom-(bottom-top)*.13);
+ const ww=Math.max(1,x1-x0),hh=Math.max(1,y1-y0),d=ctx.getImageData(x0,y0,ww,hh).data;
+ let yellow=0,total=0;
+ for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],b=d[i+2];if(r>225&&g>225&&b>185&&r-b>10&&g-b>10)yellow++;total++}
+ return total>0&&yellow/total>.32;
 }
 async function readSchedulePhoto(){
  const f=getScheduleFile();if(!f)return alert('Choisis d’abord une photo ou une image.');
  if(!f.type.startsWith('image/'))return alert('L’analyse de grille fonctionne avec une photo ou une image. Le PDF n’est pas encore pris en charge.');
  const status=document.getElementById('scheduleGridStatus'),review=document.getElementById('scheduleGridReview'),raw=document.getElementById('scheduleOCRText');
- status.textContent='Chargement du moteur OCR…';review.innerHTML='';document.getElementById('scheduleGridSave').classList.add('hidden');pendingScheduleCells=[];
- let worker;
+ status.textContent='Repérage de la grille Pronote…';review.innerHTML='';document.getElementById('scheduleGridSave').classList.add('hidden');pendingScheduleCells=[];
+ let worker,bitmap;
  try{
   if(!window.Tesseract){await new Promise((ok,no)=>{let sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
-  const bitmap=await createImageBitmap(f),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+  bitmap=await createImageBitmap(f);
+  const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
   canvas.width=bitmap.width;canvas.height=bitmap.height;ctx.drawImage(bitmap,0,0);
-  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],x0=.0565,x1=.5755,y0=.1900,y1=.8306;
-  const colW=(x1-x0)/5,rowH=(y1-y0)/10,slots=[];
+  const grid=findPronoteGrid(canvas);
+  if(!grid)throw new Error('Grille de 5 jours et 10 heures non repérée');
+  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],slots=[],rawLines=[];
   worker=await Tesseract.createWorker('fra');
-  await worker.setParameters({tessedit_pageseg_mode:'7',preserve_interword_spaces:'1',tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[]{}()- '});
+  await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1',tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[]{}()- '});
+  let occupiedCount=0;
   for(let d=0;d<5;d++)for(let h=0;h<10;h++){
-   status.textContent=`Lecture des cases Pronote… ${d*10+h+1}/50`;
-   // Crop each actual hour cell independently. Fivefold enlargement and a lighter threshold
-   // preserve small class captions; the previous 4x/12% crop cut off too much of the text.
-   const left=Math.round((x0+d*colW+.06*colW)*canvas.width),right=Math.round((x0+(d+1)*colW-.06*colW)*canvas.width);
-   const top=Math.round((y0+h*rowH+.08*rowH)*canvas.height),bottom=Math.round((y0+(h+1)*rowH-.08*rowH)*canvas.height);
-   const cw=Math.max(1,right-left),ch=Math.max(1,bottom-top),crop=document.createElement('canvas');crop.width=cw*5;crop.height=ch*5;
-   const cc=crop.getContext('2d');cc.imageSmoothingEnabled=true;cc.imageSmoothingQuality='high';cc.drawImage(canvas,left,top,cw,ch,0,0,crop.width,crop.height);
-   const pix=cc.getImageData(0,0,crop.width,crop.height),data=pix.data;
-   for(let p=0;p<data.length;p+=4){const lum=.299*data[p]+.587*data[p+1]+.114*data[p+2],v=lum<180?0:255;data[p]=data[p+1]=data[p+2]=v;data[p+3]=255;}
+   const left=grid.xs[d],right=grid.xs[d+1],top=grid.ys[h],bottom=grid.ys[h+1];
+   if(!scheduleCellIsOccupied(ctx,left,top,right,bottom))continue;
+   occupiedCount++;status.textContent=`Lecture des cours détectés… ${occupiedCount}`;
+   const padX=Math.round((right-left)*.04),padY=Math.round((bottom-top)*.04);
+   const crop=document.createElement('canvas'),cw=right-left-2*padX,ch=bottom-top-2*padY;
+   crop.width=Math.max(1,cw*6);crop.height=Math.max(1,ch*6);
+   const cc=crop.getContext('2d');cc.imageSmoothingEnabled=true;cc.imageSmoothingQuality='high';
+   cc.drawImage(canvas,left+padX,top+padY,cw,ch,0,0,crop.width,crop.height);
+   const pix=cc.getImageData(0,0,crop.width,crop.height),px=pix.data;
+   for(let p=0;p<px.length;p+=4){const lum=.299*px[p]+.587*px[p+1]+.114*px[p+2],v=lum<200?0:255;px[p]=px[p+1]=px[p+2]=v;px[p+3]=255}
    cc.putImageData(pix,0,0);
-   const result=await worker.recognize(crop),text=(result.data.text||'').replace(/\s+/g,' ').trim();
-   if(!text)continue;
+   let text=(await worker.recognize(crop)).data.text||'';
+   text=text.replace(/[\r\n]+/g,' ').replace(/\s+/g,' ').trim();
+   rawLines.push(`${days[d]} ${8+h}h-${9+h}h : ${text||'(texte non lu)'}`);
    const label=scheduleClassName(text);
-   if(/^[3456]e?(?:\s+[A-Z0-9]+)*$/i.test(label)&&/[3456]/.test(label)){
-    const confidence=Math.round(result.data.confidence||0);
-    slots.push({day:d,start:8+h,end:9+h,label,confidence});
+   if(/^[3456]e(?:\s+[A-Z0-9]+)*$/i.test(label)){
+    slots.push({day:d,start:8+h,end:9+h,label,confidence:0});
+   }else{
+    // Keep occupied but unreadable cells visible for manual correction rather than silently losing them.
+    slots.push({day:d,start:8+h,end:9+h,label:text?'À vérifier : '+text:'À renseigner',confidence:0,needsReview:true});
    }
   }
-  await worker.terminate();worker=null;bitmap.close();
-  // A repeated label in adjacent cells is kept as two lessons unless the teacher merges them
-  // during review; this avoids silently joining two distinct timetable periods.
+  await worker.terminate();worker=null;bitmap.close();bitmap=null;
   pendingScheduleCells=slots.sort((a,b)=>a.day-b.day||a.start-b.start);
-  raw.value=pendingScheduleCells.map(s=>`${days[s.day]} ${s.start}h-${s.end}h : ${s.label}`).join('\n');
-  renderScheduleGridReview();status.textContent=`Analyse terminée : ${slots.length} case(s) de cours détectée(s) sur 50. Vérifie les résultats ci-dessous.`;
-  if(!slots.length)status.textContent+=' Aucune case exploitable : essaie une capture complète et bien cadrée.';
- }catch(e){console.error(e);if(worker)try{await worker.terminate()}catch(_){}status.textContent='Échec de la reconnaissance. Vérifie la connexion et réessaie avec une capture nette.'}
+  raw.value=rawLines.join('\n');
+  renderScheduleGridReview();
+  status.textContent=`Analyse terminée : ${slots.length} case(s) colorée(s) détectée(s). Vérifie les résultats ci-dessous.`;
+  if(!slots.length)status.textContent+=' Aucune case de cours colorée repérée : vérifie que la capture montre bien la grille Pronote.';
+ }catch(e){console.error(e);if(worker)try{await worker.terminate()}catch(_){}if(bitmap)try{bitmap.close()}catch(_){}status.textContent='La grille Pronote n’a pas pu être repérée automatiquement. Vérifie que la capture montre les cinq jours et les horaires, puis réessaie.'}
 }
 function renderScheduleGridReview(){
  const box=document.getElementById('scheduleGridReview'),days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
  if(!pendingScheduleCells.length){box.innerHTML='<p class="muted">Aucun cours détecté pour le moment.</p>';document.getElementById('scheduleGridSave').classList.add('hidden');return}
- box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Jour</th><th>Horaire</th><th>Classe détectée (modifiable)</th><th></th></tr></thead><tbody>'+pendingScheduleCells.map((s,i)=>`<tr><td>${days[s.day]}</td><td style="min-width:112px"><div style="display:flex;align-items:center;gap:3px"><input aria-label="Début du cours ${i+1}" type="number" min="8" max="17" value="${s.start}" onchange="pendingScheduleCells[${i}].start=Math.max(8,Math.min(17,Number(this.value)||8));if(pendingScheduleCells[${i}].end<=pendingScheduleCells[${i}].start)pendingScheduleCells[${i}].end=pendingScheduleCells[${i}].start+1" style="width:42px"><span>h–</span><input aria-label="Fin du cours ${i+1}" type="number" min="9" max="18" value="${s.end}" onchange="pendingScheduleCells[${i}].end=Math.max(pendingScheduleCells[${i}].start+1,Math.min(18,Number(this.value)||pendingScheduleCells[${i}].start+1))" style="width:42px"><span>h</span></div></td><td><input aria-label="Classe ${i+1}" value="${esc(s.label)}" onchange="pendingScheduleCells[${i}].label=this.value" style="width:100%"></td><td><button class="small softred" onclick="pendingScheduleCells.splice(${i},1);renderScheduleGridReview()">×</button></td></tr>`).join('')+'</tbody></table></div>';
+ box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Jour</th><th>Horaire</th><th>Classe détectée (modifiable)</th><th></th></tr></thead><tbody>'+pendingScheduleCells.map((s,i)=>`<tr><td>${days[s.day]}</td><td style="min-width:112px"><div style="display:flex;align-items:center;gap:3px"><input aria-label="Début du cours ${i+1}" type="number" min="8" max="17" value="${s.start}" onchange="pendingScheduleCells[${i}].start=Math.max(8,Math.min(17,Number(this.value)||8));if(pendingScheduleCells[${i}].end<=pendingScheduleCells[${i}].start)pendingScheduleCells[${i}].end=pendingScheduleCells[${i}].start+1" style="width:42px"><span>h–</span><input aria-label="Fin du cours ${i+1}" type="number" min="9" max="18" value="${s.end}" onchange="pendingScheduleCells[${i}].end=Math.max(pendingScheduleCells[${i}].start+1,Math.min(18,Number(this.value)||pendingScheduleCells[${i}].start+1))" style="width:42px"><span>h</span></div></td><td><input aria-label="Classe ${i+1}" value="${esc(s.label)}" onchange="pendingScheduleCells[${i}].label=this.value;pendingScheduleCells[${i}].needsReview=false" style="width:100%"></td><td><button class="small softred" onclick="pendingScheduleCells.splice(${i},1);renderScheduleGridReview()">×</button></td></tr>`).join('')+'</tbody></table></div>';
  document.getElementById('scheduleGridSave').classList.remove('hidden');
 }
 function saveScheduleGridImport(){
  if(!pendingScheduleCells.length)return alert('Aucun cours à enregistrer.');
+ if(pendingScheduleCells.some(s=>s.needsReview))return alert('Certaines cases colorées n’ont pas été reconnues. Corrige leur intitulé avant de valider l’import.');
  const school=document.getElementById('scheduleSchool').value.trim()||'Établissement sans nom',year=document.getElementById('scheduleYear').value||db.schoolYear,scheduleId=uid(),created=[];
  pendingScheduleCells.forEach(s=>{
   const name=scheduleClassName(s.label);if(!name)return;
