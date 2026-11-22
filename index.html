@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="ProfSuivi">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>ProfSuivi Solo</title>
+<title>ProfSuivi Solo V8.0</title>
 <style>
 :root{--navy:#172554;--blue:#2563eb;--bg:#f3f6fb;--ink:#172033;--muted:#64748b;--line:#e2e8f0;--green:#15803d;--red:#b91c1c;--amber:#b45309}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
@@ -96,7 +96,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 /* V7.9.5 — générateur progressif de séquences */
 .seq-stepper{display:flex;gap:6px;overflow:auto;padding:4px 0 12px}.seq-step{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:12px;background:#f8fafc;color:#475569}.seq-step.current{background:#172554;color:#fff;border-color:#172554}.seq-step.done{background:#dcfce7;color:#166534;border-color:#bbf7d0}.seq-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin:9px 0;background:#fff}.seq-card h3{margin-bottom:5px}.seq-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.seq-actions button{flex:1}.seq-preview{white-space:pre-wrap;line-height:1.5;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px}.seq-library-item{border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0;background:#fff}.seq-library-item p{margin:5px 0;color:var(--muted);font-size:12px}
 
-/* V7.14.2 — navigation simplifiée et accueil mobile */
+/* V8.0.0 — navigation simplifiée et accueil mobile */
 .home-hero{background:linear-gradient(130deg,#142653,#3159b8);color:#fff;border-radius:20px;padding:19px;margin:4px 0 14px;box-shadow:0 10px 24px #14265322}
 .home-hero h1{font-size:24px;line-height:1.12;margin:0 0 6px;letter-spacing:-.04em}
 .home-hero p{margin:0;color:#dce6ff;font-size:13px}
@@ -111,7 +111,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 @media(max-width:390px){.bottom button{font-size:9px}.home-action{min-height:105px;padding:12px}}
 
 
-/* V7.14.2 — espace classe compartimenté */
+/* V8.0.0 — espace classe compartimenté */
 .workspace-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0 14px;padding:5px;background:#eaf0fc;border:1px solid #dfe7f6;border-radius:15px;position:relative;top:auto;z-index:auto;scroll-margin-top:12px}
 .workspace-nav button{min-width:0;padding:10px 3px;border:0;border-radius:11px;background:transparent;color:#586783;font-size:11px;font-weight:800;line-height:1.2}
 .workspace-nav button.active{background:#fff;color:#2854dc;box-shadow:0 2px 8px #172b5d16}
@@ -122,10 +122,29 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 .workspace-add{width:100%;margin:0 0 10px}
 @media(max-width:390px){.workspace-nav{gap:3px;padding:4px}.workspace-nav button{font-size:10px;padding:9px 1px}}
 
+
+/* V8.0 — Organisation pédagogique */
+.planner-tabs{display:flex;gap:6px;overflow:auto;padding:5px;background:#eaf0fc;border-radius:13px;margin:10px 0 14px}
+.planner-tabs button{white-space:nowrap;font-size:12px;padding:9px 12px;background:transparent;color:#53627d}
+.planner-tabs button.active{background:#fff;color:#2454d8;box-shadow:0 2px 8px #172b5d16}
+.planner-pane{display:none}.planner-pane.active{display:block}
+.weekbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px}
+.weekday{border:1px solid var(--line);border-radius:13px;background:#fff;padding:10px;margin:9px 0}
+.weekday.today{border-color:#7da3ff;box-shadow:0 0 0 2px #dbeafe}
+.lesson-card{border-left:4px solid #4775e8;background:#f5f8ff;border-radius:10px;padding:10px;margin:7px 0}
+.lesson-card.holiday{border-color:#d97706;background:#fff7ed}
+.lesson-meta{font-size:12px;color:var(--muted);margin-top:3px}
+.planner-empty{padding:18px;text-align:center;color:var(--muted);background:#f8fafc;border-radius:12px}
+.planner-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.planner-grid .field{min-width:0}
+.planner-chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#e8eefb;color:#29477d;font-size:11px;font-weight:700}
+.planner-action{width:100%;margin-top:8px}
+@media(max-width:390px){.planner-grid{grid-template-columns:1fr}.planner-tabs button{padding:8px 10px}}
+
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V7.14.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.0.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -144,6 +163,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
   <button class="home-action" data-search="élèves trombinoscope participation notes" onclick="go('roster')"><span class="ha-icon">♧</span><b>Suivi des élèves</b><small>Présences, participation et compétences</small></button>
   <button class="home-action" data-search="séquences générateur créer préparer" onclick="go('sequences')"><span class="ha-icon">♫</span><b>Mes séquences</b><small>Créer, reprendre et retrouver</small></button>
   <button class="home-action" data-search="bibliothèque références œuvres ressources" onclick="go('sequences');setTimeout(()=>renderPedagogicalLibrary(),0)"><span class="ha-icon">▤</span><b>Bibliothèque musicale</b><small>100 références et dossiers détaillés</small></button>
+  <button class="home-action" data-search="emploi du temps calendrier pronote semaine séances organisation" onclick="go('planner')"><span class="ha-icon">▦</span><b>Organisation pédagogique</b><small>Emploi du temps, calendrier et semaine de cours</small></button>
  </div>
  <div class="home-section-title">Outils et données</div>
  <div class="home-list">
@@ -272,12 +292,65 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V7.14.2</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.0.0</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
 
+<section id="plannerView" class="hidden">
+ <div class="panel">
+  <div class="row between"><div><div class="section-kicker">Organisation pédagogique</div><h2>Mon organisation</h2><p class="muted">Emploi du temps, calendrier scolaire et préparation des cours, réunis au même endroit.</p></div><span class="pill">V8.0</span></div>
+  <div class="planner-tabs">
+   <button id="ptWeek" class="active" onclick="plannerTab('week')">▦ Ma semaine</button>
+   <button id="ptTimetable" onclick="plannerTab('timetable')">◷ Emploi du temps</button>
+   <button id="ptImport" onclick="plannerTab('import')">⇧ Import Pronote</button>
+   <button id="ptCalendar" onclick="plannerTab('calendar')">▣ Calendrier</button>
+  </div>
+  <div id="plannerWeekPane" class="planner-pane active">
+   <div class="weekbar"><button class="small" onclick="shiftPlannerWeek(-7)">‹</button><b id="plannerWeekLabel">Semaine</b><button class="small" onclick="shiftPlannerWeek(7)">›</button></div>
+   <button class="small" onclick="plannerGoToday()">Aujourd'hui</button>
+   <div id="plannerWeekContent"></div>
+  </div>
+  <div id="plannerTimetablePane" class="planner-pane">
+   <div class="row between"><div><h3>Emploi du temps hebdomadaire</h3><p class="muted">Les créneaux récurrents apparaissent chaque semaine hors vacances.</p></div><button class="primary small" onclick="showPlannerCourseForm()">+ Ajouter</button></div>
+   <div id="plannerCourseForm" class="panel hidden" style="background:#f8fafc">
+    <h3 id="plannerCourseFormTitle">Nouveau cours</h3>
+    <div class="planner-grid">
+     <div class="field"><label>Classe</label><input id="pcClass" list="plannerClassOptions" placeholder="Ex. 6e A"><datalist id="plannerClassOptions"></datalist></div>
+     <div class="field"><label>Matière</label><input id="pcSubject" value="Éducation musicale"></div>
+     <div class="field"><label>Jour</label><select id="pcDay"><option value="1">Lundi</option><option value="2">Mardi</option><option value="3">Mercredi</option><option value="4">Jeudi</option><option value="5">Vendredi</option><option value="6">Samedi</option></select></div>
+     <div class="field"><label>Salle</label><input id="pcRoom" placeholder="Salle"></div>
+     <div class="field"><label>Début</label><input id="pcStart" type="time" value="08:00"></div>
+     <div class="field"><label>Fin</label><input id="pcEnd" type="time" value="09:00"></div>
+    </div>
+    <div class="row" style="margin-top:9px"><button class="primary" onclick="savePlannerCourse()">Enregistrer</button><button onclick="hidePlannerCourseForm()">Annuler</button></div>
+   </div>
+   <div id="plannerCourseList"></div>
+  </div>
+  <div id="plannerImportPane" class="planner-pane">
+   <h3>Importer l'emploi du temps Pronote</h3>
+   <p class="muted">Formats pris en charge : calendrier iCalendar (.ics) et tableau CSV (.csv). L'import détecte les classes déjà présentes et évite de créer des doublons. Tu vérifies les cours avant validation.</p>
+   <label>Fichier d'emploi du temps</label><input id="plannerImportFile" type="file" accept=".ics,.csv,text/calendar,text/csv">
+   <button class="primary planner-action" onclick="previewPlannerImport()">Analyser le fichier</button>
+   <div id="plannerImportPreview" style="margin-top:10px"></div>
+   <div class="notice" style="margin-top:12px">Un export PDF ou une capture d'écran ne peut pas être interprété directement dans cette version. Depuis Pronote, privilégie un export calendrier (.ics) ou CSV si ton établissement le propose.</div>
+  </div>
+  <div id="plannerCalendarPane" class="planner-pane">
+   <h3>Calendrier scolaire</h3>
+   <p class="muted">Les vacances sont adaptées à la zone choisie. Le calendrier est conservé hors ligne.</p>
+   <div class="planner-grid">
+    <div class="field"><label>Zone scolaire</label><select id="plannerZone" onchange="savePlannerSettings()"><option value="A">Zone A</option><option value="B">Zone B</option><option value="C">Zone C</option></select></div>
+    <div class="field"><label>Année scolaire</label><select id="plannerYear" onchange="savePlannerSettings()"><option value="2026-2027">2026-2027</option></select></div>
+   </div>
+   <div id="plannerHolidayList" style="margin-top:12px"></div>
+   <p class="muted" style="font-size:11px">Calendrier métropolitain 2026-2027. Les jours fériés nationaux et le vendredi 7 mai 2027 sont pris en compte.</p>
+  </div>
+ </div>
+ <div id="plannerSessionEditor" class="panel hidden"></div>
+</section>
+
 <section id="settingsView" class="hidden">
+ <div class="panel"><h2>Organisation pédagogique</h2><p class="muted">Import Pronote, emploi du temps, calendrier scolaire et préparation des séances.</p><button class="primary" style="width:100%" onclick="go('planner')">Ouvrir mon organisation pédagogique</button></div>
  <div class="panel"><h2>Données et sauvegardes</h2>
   <p class="muted">Les données sont enregistrées dans le stockage du navigateur sur cet iPhone. Elles ne sont pas envoyées au site qui héberge les fichiers de l'application.</p>
   <button class="primary" style="width:100%;margin:6px 0" onclick="backup()">Exporter une sauvegarde JSON</button>
@@ -311,7 +384,7 @@ function uiIcon(name){return `<svg viewBox="0 0 24 24" aria-hidden="true">${UI_I
 function decorateDashboard(){document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=uiIcon(el.dataset.icon)});document.querySelectorAll('h2').forEach(el=>{if(el.querySelector('.heading-icon'))return;const t=el.textContent.toLowerCase();let k=t.includes('classe')?'classes':t.includes('élève')?'users':t.includes('séance')||t.includes('évaluation')?'chart':t.includes('bulletin')||t.includes('appréciation')?'clipboard':t.includes('sauvegarde')?'settings':t.includes('historique')?'book':null;if(k){const s=document.createElement('span');s.className='heading-icon';s.innerHTML=uiIcon(k);el.prepend(s)}})}
 function cls(){return db.classes.find(c=>c.id===currentClass)}
 function student(){return cls()?.students.find(s=>s.id===currentStudent)}
-function go(p){page=p;['home','classes','roster','student','settings','sequence'].forEach(x=>{const el=document.getElementById(x+'View');if(el)el.classList.toggle('hidden',x!==(p==='sequences'?'sequence':p))});['Home','Classes','Roster','Sequences','Settings'].forEach(x=>{const el=document.getElementById('nav'+x);if(el)el.classList.toggle('active',p===x.toLowerCase())});if(p==='home')renderHome();if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='sequences')renderSequenceHome();decorateDashboard()}
+function go(p){page=p;['home','classes','roster','student','settings','sequence','planner'].forEach(x=>{const el=document.getElementById(x+'View');if(el)el.classList.toggle('hidden',x!==(p==='sequences'?'sequence':p))});['Home','Classes','Roster','Sequences','Settings'].forEach(x=>{const el=document.getElementById('nav'+x);if(el)el.classList.toggle('active',p===x.toLowerCase()||(p==='planner'&&x==='Settings'))});if(p==='home')renderHome();if(p==='classes')renderClasses();if(p==='roster')renderRoster();if(p==='student')renderStudent();if(p==='sequences')renderSequenceHome();if(p==='planner')renderPlanner();decorateDashboard()}
 function renderHome(){const classes=(db.classes||[]),students=classes.reduce((n,c)=>n+(c.students||[]).length,0);const a=document.getElementById('homeClassCount'),b=document.getElementById('homeStudentCount'),c=document.getElementById('homeSequenceCount');if(a)a.textContent=classes.length;if(b)b.textContent=students;if(c)c.textContent=(db.sequenceLibrary||[]).length;filterHomeActions(document.getElementById('homeSearch')?.value||'')}
 function filterHomeActions(q){const query=String(q||'').trim().toLocaleLowerCase('fr');document.querySelectorAll('#homeActionGrid [data-search]').forEach(el=>{el.style.display=!query||el.dataset.search.toLocaleLowerCase('fr').includes(query)||el.innerText.toLocaleLowerCase('fr').includes(query)?'':'none'});}
 function toggleAddClass(){let f=document.getElementById('addClassForm');f.classList.toggle('hidden');if(!f.classList.contains('hidden'))document.getElementById('newClassName').focus()}
@@ -1350,7 +1423,7 @@ function confirmPhotoGradeImport(){
 }
 
 
-// V7.14.2 — Bibliothèque documentaire intégrée localement.
+// V8.0.0 — Bibliothèque documentaire intégrée localement.
 
 
 // V7.9.5 — Générateur progressif. Les séquences sont conservées dans la sauvegarde locale ProfSuivi.
@@ -1454,6 +1527,71 @@ function restoreClassListIfHidden(){
  if(input) input.value='';
  renderClasses();
 }
+
+// V8.0 — module d'organisation pédagogique (données locales, compatible avec les sauvegardes antérieures)
+function plannerData(){db.planner=db.planner||{courses:[],plans:{},settings:{zone:'B',year:'2026-2027'}};db.planner.courses=db.planner.courses||[];db.planner.plans=db.planner.plans||{};db.planner.settings=db.planner.settings||{zone:'B',year:'2026-2027'};return db.planner}
+let plannerWeekOffset=0,plannerEditingCourse=null,plannerPendingImport=[];
+const PLANNER_DAYS=['','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const SCHOOL_HOLIDAYS={
+ 'A':[['Toussaint','2026-10-17','2026-11-02'],['Noël','2026-12-19','2027-01-04'],['Hiver','2027-02-13','2027-03-01'],['Printemps','2027-04-10','2027-04-26'],['Été','2027-07-03','2027-09-01']],
+ 'B':[['Toussaint','2026-10-17','2026-11-02'],['Noël','2026-12-19','2027-01-04'],['Hiver','2027-02-20','2027-03-08'],['Printemps','2027-04-17','2027-05-03'],['Été','2027-07-03','2027-09-01']],
+ 'C':[['Toussaint','2026-10-17','2026-11-02'],['Noël','2026-12-19','2027-01-04'],['Hiver','2027-02-06','2027-02-22'],['Printemps','2027-04-03','2027-04-19'],['Été','2027-07-03','2027-09-01']]
+};
+const PLANNER_HOLIDAYS=[['Jour de l’An','2027-01-01'],['Lundi de Pâques','2027-03-29'],['Fête du Travail','2027-05-01'],['Victoire 1945','2027-05-08'],['Ascension','2027-05-06'],['Lundi de Pentecôte','2027-05-17'],['Fête nationale','2027-07-14'],['Armistice','2026-11-11'],['Noël','2026-12-25'],['Vendredi sans classe','2027-05-07']];
+function isoDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function parseISODate(x){let [y,m,d]=String(x).split('-').map(Number);return new Date(y,m-1,d,12)}
+function mondayOf(d){let x=new Date(d);x.setHours(12,0,0,0);x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function fmtDate(d,opts={weekday:'long',day:'numeric',month:'long'}){return new Intl.DateTimeFormat('fr-FR',opts).format(d)}
+function plannerTab(tab){['week','timetable','import','calendar'].forEach(x=>{document.getElementById('planner'+({week:'Week',timetable:'Timetable',import:'Import',calendar:'Calendar'}[x])+'Pane').classList.toggle('active',x===tab);document.getElementById('pt'+({week:'Week',timetable:'Timetable',import:'Import',calendar:'Calendar'}[x])).classList.toggle('active',x===tab)});if(tab==='week')renderPlannerWeek();if(tab==='timetable')renderPlannerCourses();if(tab==='calendar')renderPlannerCalendar()}
+function renderPlanner(){plannerData();document.getElementById('plannerZone').value=plannerData().settings.zone||'B';document.getElementById('plannerYear').value='2026-2027';plannerTab('week');renderPlannerCourses();renderPlannerCalendar()}
+function savePlannerSettings(){let p=plannerData();p.settings.zone=document.getElementById('plannerZone').value;p.settings.year=document.getElementById('plannerYear').value;save();renderPlannerCalendar();renderPlannerWeek()}
+function isSchoolHoliday(date){let iso=isoDate(date),p=plannerData(),zone=p.settings.zone||'B';for(let h of (SCHOOL_HOLIDAYS[zone]||[]))if(iso>=h[1]&&iso<h[2])return h[0];if(iso==='2027-05-07')return 'Journée sans classe';return null}
+function renderPlannerWeek(){
+ let p=plannerData(),start=mondayOf(new Date());
+ start.setDate(start.getDate()+plannerWeekOffset);
+ let end=new Date(start);end.setDate(end.getDate()+4);
+ document.getElementById('plannerWeekLabel').textContent=`${fmtDate(start,{day:'numeric',month:'short'})} – ${fmtDate(end,{day:'numeric',month:'long',year:'numeric'})}`;
+ let html='';
+ for(let day=0;day<5;day++){
+  let date=new Date(start);date.setDate(start.getDate()+day);
+  let iso=isoDate(date),holiday=isSchoolHoliday(date);
+  let courses=p.courses.filter(c=>Number(c.weekday)===day+1).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  let today=iso===isoDate(new Date());
+  html+=`<div class="weekday ${today?'today':''}"><div class="row between"><b>${esc(fmtDate(date))}</b>${holiday?`<span class="planner-chip">${esc(holiday)}</span>`:`<span class="lesson-meta">${courses.length} cours</span>`}</div>`;
+  if(holiday){html+=`<div class="lesson-card holiday">Pas de cours prévu pendant cette période.</div>`;}
+  else if(!courses.length){html+='<div class="lesson-meta" style="padding:8px 0">Aucun cours enregistré.</div>';}
+  else {
+   courses.forEach(c=>{
+    let key=plannerPlanKey(iso,c),plan=p.plans[key]||{};
+    html+=`<div class="lesson-card"><div class="row between"><b>${esc(c.className)}</b><span class="planner-chip">${esc(c.start)} – ${esc(c.end)}</span></div><div>${esc(c.subject||'Cours')}${c.room?' · '+esc(c.room):''}</div>${plan.title?`<div style="margin-top:6px"><b>${esc(plan.title)}</b></div>`:'<div class="lesson-meta">Contenu à préparer</div>'}${plan.content?`<div class="lesson-meta">${esc(plan.content.slice(0,170))}${plan.content.length>170?'…':''}</div>`:''}<div class="row" style="margin-top:7px"><button class="small" onclick="editPlannerPlan('${iso}','${c.id}')">${plan.title||plan.content?'Modifier la séance':'Préparer la séance'}</button>${plan.status?`<span class="planner-chip">${esc(plan.status)}</span>`:''}</div></div>`;
+   });
+  }
+  html+='</div>';
+ }
+ document.getElementById('plannerWeekContent').innerHTML=html||'<div class="planner-empty">Aucun cours cette semaine.</div>';
+}
+function shiftPlannerWeek(n){plannerWeekOffset+=n;renderPlannerWeek()}function plannerGoToday(){plannerWeekOffset=0;renderPlannerWeek()}
+function showPlannerCourseForm(id=null){plannerEditingCourse=id;let f=document.getElementById('plannerCourseForm');f.classList.remove('hidden');document.getElementById('plannerCourseFormTitle').textContent=id?'Modifier le cours':'Nouveau cours';let c=plannerData().courses.find(x=>x.id===id);document.getElementById('pcClass').value=c?.className||'';document.getElementById('pcSubject').value=c?.subject||'Éducation musicale';document.getElementById('pcDay').value=c?.weekday||'1';document.getElementById('pcRoom').value=c?.room||'';document.getElementById('pcStart').value=c?.start||'08:00';document.getElementById('pcEnd').value=c?.end||'09:00';document.getElementById('plannerClassOptions').innerHTML=(db.classes||[]).map(x=>`<option value="${esc(x.name)}">`).join('')}
+function hidePlannerCourseForm(){document.getElementById('plannerCourseForm').classList.add('hidden');plannerEditingCourse=null}
+function normalizeClassName(n){return String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim()}
+function ensurePlannerClass(name){let n=String(name||'').trim();if(!n)return null;let found=db.classes.find(c=>normalizeClassName(c.name)===normalizeClassName(n));if(found)return found;let c={id:uid(),name:n,students:[]};db.classes.push(c);return c}
+function savePlannerCourse(){let name=document.getElementById('pcClass').value.trim(),start=document.getElementById('pcStart').value,end=document.getElementById('pcEnd').value;if(!name)return alert('Indique la classe.');if(!start||!end||end<=start)return alert('Vérifie les horaires.');let c=ensurePlannerClass(name),p=plannerData(),obj={id:plannerEditingCourse||uid(),classId:c.id,className:c.name,subject:document.getElementById('pcSubject').value.trim()||'Cours',weekday:Number(document.getElementById('pcDay').value),room:document.getElementById('pcRoom').value.trim(),start,end};let ix=p.courses.findIndex(x=>x.id===obj.id);if(ix>=0)p.courses[ix]=obj;else{let dup=p.courses.some(x=>x.weekday===obj.weekday&&x.start===obj.start&&x.end===obj.end&&normalizeClassName(x.className)===normalizeClassName(obj.className));if(dup)return alert('Ce créneau existe déjà pour cette classe.');p.courses.push(obj)}save();hidePlannerCourseForm();renderPlannerCourses();renderPlannerWeek()}
+function renderPlannerCourses(){let p=plannerData(),box=document.getElementById('plannerCourseList');if(!box)return;let a=p.courses.slice().sort((x,y)=>x.weekday-y.weekday||x.start.localeCompare(y.start));box.innerHTML=a.length?a.map(c=>`<div class="student"><div class="row between"><b>${esc(PLANNER_DAYS[c.weekday]||'Jour')} · ${esc(c.className)}</b><span class="planner-chip">${esc(c.start)}–${esc(c.end)}</span></div><div class="lesson-meta">${esc(c.subject||'Cours')}${c.room?' · '+esc(c.room):''}</div><div class="row" style="margin-top:8px"><button class="small" onclick="showPlannerCourseForm('${c.id}')">Modifier</button><button class="small softred" onclick="deletePlannerCourse('${c.id}')">Supprimer</button></div></div>`).join(''):'<div class="planner-empty">Aucun cours enregistré. Ajoute un créneau ou importe ton emploi du temps Pronote.</div>'}
+function deletePlannerCourse(id){if(!confirm('Supprimer ce créneau de l’emploi du temps ?'))return;let p=plannerData();p.courses=p.courses.filter(c=>c.id!==id);save();renderPlannerCourses();renderPlannerWeek()}
+function plannerPlanKey(date,c){return `${date}|${c.classId||normalizeClassName(c.className)}|${c.start}`}
+function editPlannerPlan(date,id){let p=plannerData(),c=p.courses.find(x=>x.id===id);if(!c)return;let key=plannerPlanKey(date,c),plan=p.plans[key]||{},box=document.getElementById('plannerSessionEditor');box.classList.remove('hidden');box.innerHTML=`<div class="row between"><h3>Préparer la séance</h3><button class="small" onclick="closePlannerPlan()">Fermer</button></div><p class="muted">${esc(fmtDate(parseISODate(date)))} · ${esc(c.className)} · ${esc(c.start)}–${esc(c.end)}</p><label>Titre / séquence</label><input id="planTitle" value="${esc(plan.title||'')}" placeholder="Ex. Le Moyen Âge musical"><label style="margin-top:8px">Contenu du cours</label><textarea id="planContent" placeholder="Écoutes, activités, déroulement…">${esc(plan.content||'')}</textarea><label style="margin-top:8px">Objectifs pédagogiques</label><textarea id="planObjectives" placeholder="Compétences et objectifs…">${esc(plan.objectives||'')}</textarea><label style="margin-top:8px">À préparer</label><textarea id="planPrep" placeholder="Fiche élève, support audio, matériel…">${esc(plan.prep||'')}</textarea><label style="margin-top:8px">État de la séance</label><select id="planStatus"><option ${plan.status==='À préparer'?'selected':''}>À préparer</option><option ${plan.status==='Prête'?'selected':''}>Prête</option><option ${plan.status==='Réalisée'?'selected':''}>Réalisée</option><option ${plan.status==='Reportée'?'selected':''}>Reportée</option><option ${plan.status==='Annulée'?'selected':''}>Annulée</option></select><div class="row" style="margin-top:10px"><button class="primary" onclick="savePlannerPlan('${date}','${c.id}')">Enregistrer</button><button onclick="closePlannerPlan()">Annuler</button></div>`;box.scrollIntoView({behavior:'smooth',block:'start'})}
+function savePlannerPlan(date,id){let c=plannerData().courses.find(x=>x.id===id);if(!c)return;let key=plannerPlanKey(date,c),p=plannerData();p.plans[key]={title:document.getElementById('planTitle').value.trim(),content:document.getElementById('planContent').value.trim(),objectives:document.getElementById('planObjectives').value.trim(),prep:document.getElementById('planPrep').value.trim(),status:document.getElementById('planStatus').value,updatedAt:new Date().toISOString()};save();closePlannerPlan();renderPlannerWeek()}
+function closePlannerPlan(){let b=document.getElementById('plannerSessionEditor');b.classList.add('hidden');b.innerHTML=''}
+function renderPlannerCalendar(){let p=plannerData(),zone=p.settings.zone||'B',box=document.getElementById('plannerHolidayList');if(!box)return;let a=(SCHOOL_HOLIDAYS[zone]||[]);box.innerHTML='<h4>Vacances scolaires – zone '+zone+'</h4>'+a.map(h=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(h[0])}</b><span class="lesson-meta">${fmtDate(parseISODate(h[1]),{day:'numeric',month:'short'})} → ${fmtDate(parseISODate(h[2]),{day:'numeric',month:'short'})}</span></div>`).join('')+'<h4 style="margin-top:14px">Jours sans classe et jours fériés</h4>'+PLANNER_HOLIDAYS.map(h=>`<div class="row between" style="padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(h[0])}</span><span class="lesson-meta">${fmtDate(parseISODate(h[1]),{day:'numeric',month:'short',year:'numeric'})}</span></div>`).join('')}
+function unfoldIcs(s){return s.replace(/\r?\n[ \t]/g,'')}
+function parseIcs(text){let lines=unfoldIcs(text).split(/\r?\n/),events=[],cur=null;for(let line of lines){if(line==='BEGIN:VEVENT'){cur={};continue}if(line==='END:VEVENT'){if(cur)events.push(cur);cur=null;continue}if(!cur)continue;let i=line.indexOf(':');if(i<0)continue;let k=line.slice(0,i).split(';')[0].toUpperCase(),v=line.slice(i+1);cur[k]=v}return events.map(e=>{let d=e.DTSTART||'',end=e.DTEND||'',allDay=/^\d{8}$/.test(d),date=allDay?`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`:`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`,time=allDay?'08:00':`${d.slice(9,11)}:${d.slice(11,13)}`,endTime=allDay?'09:00':`${end.slice(9,11)}:${end.slice(11,13)}`,summary=(e.SUMMARY||'Cours').replace(/\\,/g,',').replace(/\\n/g,' '),room=(e.LOCATION||'').replace(/\\,/g,',');return {date,time,endTime,summary,room,rrule:e.RRULE||''}}).filter(e=>e.date&&/^\d{4}-\d\d-\d\d$/.test(e.date))}
+function csvRows(text){let delimiter=(text.split(/\r?\n/)[0].match(/;/g)||[]).length> (text.split(/\r?\n/)[0].match(/,/g)||[]).length?';':',';let rows=[],row=[],v='',q=false;for(let i=0;i<text.length;i++){let c=text[i];if(c==='"'){if(q&&text[i+1]==='"'){v+='"';i++}else q=!q}else if(c===delimiter&&!q){row.push(v.trim());v=''}else if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&text[i+1]==='\n')i++;row.push(v.trim());if(row.some(x=>x))rows.push(row);row=[];v=''}else v+=c}row.push(v.trim());if(row.some(x=>x))rows.push(row);return rows}
+function findCol(headers,terms){return headers.findIndex(h=>terms.some(t=>h.includes(t)))}
+function parsePlannerCsv(text){let rows=csvRows(text);if(rows.length<2)return [];let h=rows[0].map(x=>normalizeClassName(x));let ci=findCol(h,['classe','groupe','division']),di=findCol(h,['date','jour']),si=findCol(h,['debut','début','heure debut','heure de debut']),ei=findCol(h,['fin','heure fin']),ti=findCol(h,['matiere','matière','cours','enseignement']),ri=findCol(h,['salle','lieu']);if(ci<0)return [];return rows.slice(1).map(r=>{let day=di>=0?r[di]:'',date='';if(/^\d{4}-\d\d-\d\d$/.test(day))date=day;let dayName=normalizeClassName(day),weekday=['lundi','mardi','mercredi','jeudi','vendredi','samedi'].findIndex(x=>dayName.startsWith(x))+1;return {className:r[ci]||'',date,weekday,time:si>=0?r[si]:'08:00',endTime:ei>=0?r[ei]:'09:00',summary:ti>=0?r[ti]:'Cours',room:ri>=0?r[ri]:''}}).filter(x=>x.className)}
+function inferClass(summary){let t=String(summary).replace(/\\,/g,',').trim();let m=t.match(/\b(?:6e|5e|4e|3e)\s*[A-Z0-9]{1,4}\b/i)||t.match(/\b(?:2nde|1ere|terminale|SEGPA|ULIS)\s*[A-Z0-9]{0,4}\b/i);if(m)return m[0].trim();return t.split(/[|,-]/)[0].trim()}
+async function previewPlannerImport(){let f=document.getElementById('plannerImportFile').files[0];if(!f)return alert('Choisis un fichier .ics ou .csv.');let text=await f.text(),items;if(f.name.toLowerCase().endsWith('.ics'))items=parseIcs(text).map(e=>({...e,className:inferClass(e.summary)}));else items=parsePlannerCsv(text);if(!items.length)return alert('Aucun cours reconnu. Vérifie que le fichier contient une colonne Classe/Groupe ou des événements calendrier.');let courses=[],unknown=[];items.forEach(e=>{let weekday=e.weekday||((parseISODate(e.date).getDay()+6)%7+1);if(weekday<1||weekday>6)return;let c={className:e.className||inferClass(e.summary),subject:e.summary||'Cours',room:e.room||'',weekday,start:e.time||'08:00',end:e.endTime||'09:00',date:e.date||''};let k=[normalizeClassName(c.className),c.weekday,c.start,c.end,normalizeClassName(c.subject)].join('|');if(!courses.some(x=>x._k===k))courses.push({...c,_k:k})});plannerPendingImport=courses;let existing=new Set(db.classes.map(c=>normalizeClassName(c.name)));let newClasses=[...new Set(courses.map(c=>c.className).filter(n=>!existing.has(normalizeClassName(n))))];document.getElementById('plannerImportPreview').innerHTML=`<div class="panel"><b>${courses.length} créneaux détectés</b><p class="muted">${newClasses.length} classe(s) à créer · ${courses.length-newClasses.length} créneaux associés à des classes existantes ou à créer.</p><div style="max-height:260px;overflow:auto">${courses.slice(0,80).map(c=>`<div class="lesson-meta" style="padding:5px 0;border-bottom:1px solid var(--line)"><b>${esc(c.className)}</b> · ${esc(PLANNER_DAYS[c.weekday])} ${esc(c.start)}–${esc(c.end)} · ${esc(c.subject)}</div>`).join('')}</div>${courses.length>80?`<p class="muted">… et ${courses.length-80} autres créneaux</p>`:''}<button class="primary planner-action" onclick="confirmPlannerImport()">Valider l'import et créer les classes manquantes</button></div>`}
+function confirmPlannerImport(){let p=plannerData(),added=0,classesAdded=0;plannerPendingImport.forEach(x=>{let existed=db.classes.some(c=>normalizeClassName(c.name)===normalizeClassName(x.className));let cl=ensurePlannerClass(x.className);if(!cl)return;if(!existed)classesAdded++;let dup=p.courses.some(c=>normalizeClassName(c.className)===normalizeClassName(cl.name)&&c.weekday===x.weekday&&c.start===x.start&&c.end===x.end&&normalizeClassName(c.subject)===normalizeClassName(x.subject));if(!dup){p.courses.push({id:uid(),classId:cl.id,className:cl.name,subject:x.subject,room:x.room,weekday:x.weekday,start:x.start,end:x.end,source:'Pronote'});added++}});save();plannerPendingImport=[];document.getElementById('plannerImportPreview').innerHTML=`<div class="notice">Import terminé : ${added} créneau(x) ajouté(s). Les classes existantes ont été conservées et les doublons ignorés.</div>`;renderPlannerCourses();renderPlannerWeek();alert(`Import terminé : ${added} créneau(x) ajouté(s).`)}
+
 (function(){
  const input=document.getElementById('classSearch');
  if(input){ input.value=''; input.setAttribute('autocomplete','off'); }
