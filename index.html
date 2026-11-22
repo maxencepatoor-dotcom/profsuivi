@@ -96,7 +96,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 /* V7.9.5 — générateur progressif de séquences */
 .seq-stepper{display:flex;gap:6px;overflow:auto;padding:4px 0 12px}.seq-step{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:12px;background:#f8fafc;color:#475569}.seq-step.current{background:#172554;color:#fff;border-color:#172554}.seq-step.done{background:#dcfce7;color:#166534;border-color:#bbf7d0}.seq-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin:9px 0;background:#fff}.seq-card h3{margin-bottom:5px}.seq-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.seq-actions button{flex:1}.seq-preview{white-space:pre-wrap;line-height:1.5;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px}.seq-library-item{border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0;background:#fff}.seq-library-item p{margin:5px 0;color:var(--muted);font-size:12px}
 
-/* V7.13.0 — navigation simplifiée et accueil mobile */
+/* V7.14.0 — navigation simplifiée et accueil mobile */
 .home-hero{background:linear-gradient(130deg,#142653,#3159b8);color:#fff;border-radius:20px;padding:19px;margin:4px 0 14px;box-shadow:0 10px 24px #14265322}
 .home-hero h1{font-size:24px;line-height:1.12;margin:0 0 6px;letter-spacing:-.04em}
 .home-hero p{margin:0;color:#dce6ff;font-size:13px}
@@ -110,10 +110,22 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 .bottom .bottominner{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}.bottom button{min-width:0;padding:8px 2px;font-size:10px}.bottom .nav-icon{display:block;margin:0 auto 4px}.bottom button span:last-child{white-space:nowrap}
 @media(max-width:390px){.bottom button{font-size:9px}.home-action{min-height:105px;padding:12px}}
 
+
+/* V7.14.0 — espace classe compartimenté */
+.workspace-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:10px 0 14px;padding:5px;background:#eaf0fc;border:1px solid #dfe7f6;border-radius:15px;position:sticky;top:5px;z-index:5}
+.workspace-nav button{min-width:0;padding:10px 3px;border:0;border-radius:11px;background:transparent;color:#586783;font-size:11px;font-weight:800;line-height:1.2}
+.workspace-nav button.active{background:#fff;color:#2854dc;box-shadow:0 2px 8px #172b5d16}
+.workspace-nav button span{display:block;font-size:16px;margin-bottom:4px}
+.workspace-pane{display:none}.workspace-pane.active{display:block}
+.workspace-pane>.panel:first-child{margin-top:0}
+.workspace-intro{font-size:12px;color:var(--muted);margin:-5px 2px 12px}
+.workspace-add{width:100%;margin:0 0 10px}
+@media(max-width:390px){.workspace-nav{gap:3px;padding:4px}.workspace-nav button{font-size:10px;padding:9px 1px}}
+
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V7.13.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V7.14.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -260,7 +272,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V7.13.0</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V7.14.0</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -366,7 +378,32 @@ function renderStudentLongHistory(){
  items.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
  box.innerHTML=items.length?items.map(x=>`<div style="padding:8px 0;border-bottom:1px solid var(--line)"><div class="row between"><b>${esc(x.kind)}</b><span class="muted">${esc(x.date)}</span></div><div style="margin-top:3px">${esc(x.text)}</div></div>`).join(''):'<p class="muted">Aucune donnée historique enregistrée pour le moment.</p>';
 }
-function renderRoster(){let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;renderPortraits();document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';let stats={present:0,events:0,graded:0};c.students.forEach(s=>{stats.events+=s.events.length;if(s.events.some(e=>e.type==='Présent'&&e.date===d.value&&e.session===Number(document.getElementById('sessionNo').value)))stats.present++;if(sessionAverage(s).count)stats.graded++});document.getElementById('classStats').innerHTML=`<div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.present}</b><span>Présents notés</span></div><div class="statbox"><b>${stats.graded}</b><span>Avec participation</span></div>`;
+let classWorkspaceTab='session';
+function setupClassWorkspace(){
+ const root=document.getElementById('rosterView');if(!root||root.dataset.workspaceReady)return;
+ const children=[...root.children];
+ const top=children[0],session=children[1],dashboard=document.getElementById('pedagogyDashboard'),repere=children[3],trombi=children[4],bulletin=children[5],mail=document.getElementById('mailExportPanel'),photo=document.getElementById('photoGradesPanel'),pronote=children[8],v69=document.getElementById('v69Tools'),average=children[10],studentList=document.getElementById('studentList');
+ const nav=document.createElement('div');nav.className='workspace-nav';nav.setAttribute('role','tablist');nav.innerHTML=`<button type="button" data-tab="session" class="active"><span>◷</span>Séance</button><button type="button" data-tab="students"><span>♧</span>Élèves</button><button type="button" data-tab="reports"><span>▥</span>Bilans</button><button type="button" data-tab="imports"><span>⇧</span>Imports</button>`;
+ const panes={};[['session','Suivi de la séance'],['students','Liste des élèves'],['reports','Bilans de la classe'],['imports','Importations et trombinoscope']].forEach(([id,title])=>{let p=document.createElement('div');p.className='workspace-pane'+(id==='session'?' active':'');p.id='workspace-'+id;p.setAttribute('role','tabpanel');let intro=document.createElement('p');intro.className='workspace-intro';intro.textContent=title;p.appendChild(intro);panes[id]=p;root.appendChild(p)});
+ root.insertBefore(nav,top.nextSibling);
+ const move=(el,pane)=>{if(el)pane.appendChild(el)};
+ move(session,panes.session);
+ // Le bouton d'ajout d'élève est déplacé vers la liste, sans changer sa fonction.
+ const addBtn=session.querySelector('button[onclick="addStudent()"]');
+ if(addBtn){addBtn.classList.add('workspace-add');panes.students.appendChild(addBtn)}
+ move(average,panes.students);move(studentList,panes.students);
+ move(dashboard,panes.reports);move(repere,panes.reports);move(v69,panes.reports);move(bulletin,panes.reports);move(mail,panes.reports);
+ move(trombi,panes.imports);move(photo,panes.imports);move(pronote,panes.imports);
+ nav.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>setClassWorkspaceTab(b.dataset.tab)));
+ root.dataset.workspaceReady='1';setClassWorkspaceTab(classWorkspaceTab,false);
+}
+function setClassWorkspaceTab(tab,scroll=true){
+ if(!['session','students','reports','imports'].includes(tab))tab='session';classWorkspaceTab=tab;
+ document.querySelectorAll('#rosterView .workspace-nav button').forEach(b=>{const active=b.dataset.tab===tab;b.classList.toggle('active',active);b.setAttribute('aria-selected',active?'true':'false')});
+ document.querySelectorAll('#rosterView .workspace-pane').forEach(p=>p.classList.toggle('active',p.id==='workspace-'+tab));
+ if(scroll)document.getElementById('rosterView')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderRoster(){setupClassWorkspace();let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;renderPortraits();document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';let stats={present:0,events:0,graded:0};c.students.forEach(s=>{stats.events+=s.events.length;if(s.events.some(e=>e.type==='Présent'&&e.date===d.value&&e.session===Number(document.getElementById('sessionNo').value)))stats.present++;if(sessionAverage(s).count)stats.graded++});document.getElementById('classStats').innerHTML=`<div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.present}</b><span>Présents notés</span></div><div class="statbox"><b>${stats.graded}</b><span>Avec participation</span></div>`;
  let averages=c.students.map(s=>sessionAverage(s).avg).filter(x=>x!==null);let classAvg=averages.length?averages.reduce((a,b)=>a+b,0)/averages.length:null;document.getElementById('classAverage').textContent=classAvg===null?'Aucune note de participation enregistrée pour le moment.':`Moyenne de classe : ${classAvg.toFixed(2).replace('.',',')} / 4 · ${averages.length} élève(s) évalué(s)`;
  renderV69Tools();renderPedagogyDashboard();
  if(!c.students.length){list.innerHTML='<div class="panel empty">Aucun élève. Ajoute-les manuellement ou importe un CSV Pronote.</div>';return}
@@ -1291,7 +1328,7 @@ function confirmPhotoGradeImport(){
 }
 
 
-// V7.13.0 — Bibliothèque documentaire intégrée localement.
+// V7.14.0 — Bibliothèque documentaire intégrée localement.
 
 
 // V7.9.5 — Générateur progressif. Les séquences sont conservées dans la sauvegarde locale ProfSuivi.
