@@ -125,7 +125,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.1</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -274,7 +274,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.1</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.2</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -360,7 +360,7 @@ let pendingScheduleCells=[];
 function previewSchedulePhoto(input){const f=input.files?.[0],box=document.getElementById('schedulePhotoPreview');if(!f)return;document.getElementById(input.id==='schedulePhoto'?'scheduleCamera':'schedulePhoto').value='';box.textContent=f.name+' · '+Math.round(f.size/1024)+' Ko';if(f.type.startsWith('image/')){const u=URL.createObjectURL(f);box.innerHTML=`<div>${esc(f.name)} · ${Math.round(f.size/1024)} Ko</div><img src="${u}" alt="Aperçu de l'emploi du temps" style="max-width:100%;max-height:260px;border-radius:12px;margin-top:8px">`}}
 function scheduleNormalizeLabel(s){
  let v=String(s||'').replace(/[\[\]{}()]/g,' ').replace(/[|]/g,'I').replace(/\s+/g,' ').trim().toUpperCase();
- v=v.replace(/^S(?=[A-Z0-9])/,'5').replace(/^4(?=8(?:\s|$))/,'4B');
+ v=v.replace(/^S(?=[A-Z0-9])/,'5').replace(/^([3456])8[-_]*$/,'$1B').replace(/^([3456])8(?=$|\s)/,'$1B').replace(/^4(?=8(?:\s|$))/,'4B');
  v=v.replace(/^([3456])\s*([A-Z])(?:[-_]+)?$/,'$1$2').replace(/\b([3456])\s*E(?:ME)?\b/g,'$1E').replace(/\b([3456])\s*([A-Z])\b/g,'$1$2');
  v=v.replace(/[^A-Z0-9 ]/g,'').trim();
  if(/^4E?DMUSI/.test(v)||/^4EDMUS/.test(v))return '4e';
@@ -378,38 +378,47 @@ async function readSchedulePhoto(){
  if(!f.type.startsWith('image/'))return alert('L’analyse de grille fonctionne avec une photo ou une image. Le PDF n’est pas encore pris en charge.');
  const status=document.getElementById('scheduleGridStatus'),review=document.getElementById('scheduleGridReview'),raw=document.getElementById('scheduleOCRText');
  status.textContent='Chargement du moteur OCR…';review.innerHTML='';document.getElementById('scheduleGridSave').classList.add('hidden');pendingScheduleCells=[];
+ let worker;
  try{
   if(!window.Tesseract){await new Promise((ok,no)=>{let sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
   const bitmap=await createImageBitmap(f),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
   canvas.width=bitmap.width;canvas.height=bitmap.height;ctx.drawImage(bitmap,0,0);
-  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],x0=.0565,x1=.5755,y0=.1900,y1=.8306,colW=(x1-x0)/5,rowH=(y1-y0)/10,slots=[];
-  const worker=await Tesseract.createWorker('fra');
-  await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[]- '});
+  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],x0=.0565,x1=.5755,y0=.1900,y1=.8306;
+  const colW=(x1-x0)/5,rowH=(y1-y0)/10,slots=[];
+  worker=await Tesseract.createWorker('fra');
+  await worker.setParameters({tessedit_pageseg_mode:'7',preserve_interword_spaces:'1',tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[]{}()- '});
   for(let d=0;d<5;d++)for(let h=0;h<10;h++){
-    status.textContent=`Lecture des cases… ${d*10+h+1}/50`;
-    const sx=Math.round((x0+d*colW+.08*colW)*canvas.width),ex=Math.round((x0+(d+1)*colW-.08*colW)*canvas.width);
-    const sy=Math.round((y0+h*rowH+.12*rowH)*canvas.height),ey=Math.round((y0+(h+1)*rowH-.12*rowH)*canvas.height);
-    const cw=Math.max(1,ex-sx),ch=Math.max(1,ey-sy),crop=document.createElement('canvas');crop.width=cw*4;crop.height=ch*4;
-    const cc=crop.getContext('2d');cc.imageSmoothingEnabled=true;cc.imageSmoothingQuality='high';cc.drawImage(canvas,sx,sy,cw,ch,0,0,cw*4,ch*4);
-    const pixels=cc.getImageData(0,0,crop.width,crop.height),data=pixels.data;
-    for(let p=0;p<data.length;p+=4){const lum=.299*data[p]+.587*data[p+1]+.114*data[p+2],v=lum<172?0:255;data[p]=data[p+1]=data[p+2]=v;data[p+3]=255;}
-    cc.putImageData(pixels,0,0);
-    const result=await worker.recognize(crop);
-    const text=(result.data.text||'').replace(/\s+/g,' ').trim(),label=scheduleClassName(text);
-    if(/^[3456]e?(?:\s+[A-Z0-9]+)*$/i.test(label)&&/[3456]/.test(label)){
-      slots.push({day:d,start:8+h,end:9+h,label,confidence:Math.round(result.data.confidence||0)});
-    }
+   status.textContent=`Lecture des cases Pronote… ${d*10+h+1}/50`;
+   // Crop each actual hour cell independently. Fivefold enlargement and a lighter threshold
+   // preserve small class captions; the previous 4x/12% crop cut off too much of the text.
+   const left=Math.round((x0+d*colW+.06*colW)*canvas.width),right=Math.round((x0+(d+1)*colW-.06*colW)*canvas.width);
+   const top=Math.round((y0+h*rowH+.08*rowH)*canvas.height),bottom=Math.round((y0+(h+1)*rowH-.08*rowH)*canvas.height);
+   const cw=Math.max(1,right-left),ch=Math.max(1,bottom-top),crop=document.createElement('canvas');crop.width=cw*5;crop.height=ch*5;
+   const cc=crop.getContext('2d');cc.imageSmoothingEnabled=true;cc.imageSmoothingQuality='high';cc.drawImage(canvas,left,top,cw,ch,0,0,crop.width,crop.height);
+   const pix=cc.getImageData(0,0,crop.width,crop.height),data=pix.data;
+   for(let p=0;p<data.length;p+=4){const lum=.299*data[p]+.587*data[p+1]+.114*data[p+2],v=lum<180?0:255;data[p]=data[p+1]=data[p+2]=v;data[p+3]=255;}
+   cc.putImageData(pix,0,0);
+   const result=await worker.recognize(crop),text=(result.data.text||'').replace(/\s+/g,' ').trim();
+   if(!text)continue;
+   const label=scheduleClassName(text);
+   if(/^[3456]e?(?:\s+[A-Z0-9]+)*$/i.test(label)&&/[3456]/.test(label)){
+    const confidence=Math.round(result.data.confidence||0);
+    slots.push({day:d,start:8+h,end:9+h,label,confidence});
+   }
   }
-  await worker.terminate();bitmap.close();
-  raw.value=slots.map(s=>`${days[s.day]} ${s.start}h-${s.end}h : ${s.label}`).join('\n');pendingScheduleCells=slots;
+  await worker.terminate();worker=null;bitmap.close();
+  // A repeated label in adjacent cells is kept as two lessons unless the teacher merges them
+  // during review; this avoids silently joining two distinct timetable periods.
+  pendingScheduleCells=slots.sort((a,b)=>a.day-b.day||a.start-b.start);
+  raw.value=pendingScheduleCells.map(s=>`${days[s.day]} ${s.start}h-${s.end}h : ${s.label}`).join('\n');
   renderScheduleGridReview();status.textContent=`Analyse terminée : ${slots.length} case(s) de cours détectée(s) sur 50. Vérifie les résultats ci-dessous.`;
   if(!slots.length)status.textContent+=' Aucune case exploitable : essaie une capture complète et bien cadrée.';
- }catch(e){console.error(e);status.textContent='Échec de la reconnaissance. Vérifie la connexion et réessaie avec une capture nette.'}
+ }catch(e){console.error(e);if(worker)try{await worker.terminate()}catch(_){}status.textContent='Échec de la reconnaissance. Vérifie la connexion et réessaie avec une capture nette.'}
 }
 function renderScheduleGridReview(){
  const box=document.getElementById('scheduleGridReview'),days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
  if(!pendingScheduleCells.length){box.innerHTML='<p class="muted">Aucun cours détecté pour le moment.</p>';document.getElementById('scheduleGridSave').classList.add('hidden');return}
- box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Jour</th><th>Horaire</th><th>Classe détectée (modifiable)</th><th></th></tr></thead><tbody>'+pendingScheduleCells.map((s,i)=>`<tr><td>${days[s.day]}</td><td>${s.start}h–${s.end}h</td><td><input aria-label="Classe ${i+1}" value="${esc(s.label)}" onchange="pendingScheduleCells[${i}].label=this.value" style="width:100%"></td><td><button class="small softred" onclick="pendingScheduleCells.splice(${i},1);renderScheduleGridReview()">×</button></td></tr>`).join('')+'</tbody></table></div>';
+ box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Jour</th><th>Horaire</th><th>Classe détectée (modifiable)</th><th></th></tr></thead><tbody>'+pendingScheduleCells.map((s,i)=>`<tr><td>${days[s.day]}</td><td style="min-width:112px"><div style="display:flex;align-items:center;gap:3px"><input aria-label="Début du cours ${i+1}" type="number" min="8" max="17" value="${s.start}" onchange="pendingScheduleCells[${i}].start=Math.max(8,Math.min(17,Number(this.value)||8));if(pendingScheduleCells[${i}].end<=pendingScheduleCells[${i}].start)pendingScheduleCells[${i}].end=pendingScheduleCells[${i}].start+1" style="width:42px"><span>h–</span><input aria-label="Fin du cours ${i+1}" type="number" min="9" max="18" value="${s.end}" onchange="pendingScheduleCells[${i}].end=Math.max(pendingScheduleCells[${i}].start+1,Math.min(18,Number(this.value)||pendingScheduleCells[${i}].start+1))" style="width:42px"><span>h</span></div></td><td><input aria-label="Classe ${i+1}" value="${esc(s.label)}" onchange="pendingScheduleCells[${i}].label=this.value" style="width:100%"></td><td><button class="small softred" onclick="pendingScheduleCells.splice(${i},1);renderScheduleGridReview()">×</button></td></tr>`).join('')+'</tbody></table></div>';
  document.getElementById('scheduleGridSave').classList.remove('hidden');
 }
 function saveScheduleGridImport(){
