@@ -125,7 +125,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.1</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -274,7 +274,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.0</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.1</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -361,7 +361,7 @@ function previewSchedulePhoto(input){const f=input.files?.[0],box=document.getEl
 function scheduleNormalizeLabel(s){
  let v=String(s||'').replace(/[\[\]{}()]/g,' ').replace(/[|]/g,'I').replace(/\s+/g,' ').trim().toUpperCase();
  v=v.replace(/^S(?=[A-Z0-9])/,'5').replace(/^4(?=8(?:\s|$))/,'4B');
- v=v.replace(/\b([3456])\s*E(?:ME)?\b/g,'$1E').replace(/\b([3456])\s*([A-Z])\b/g,'$1$2');
+ v=v.replace(/^([3456])\s*([A-Z])(?:[-_]+)?$/,'$1$2').replace(/\b([3456])\s*E(?:ME)?\b/g,'$1E').replace(/\b([3456])\s*([A-Z])\b/g,'$1$2');
  v=v.replace(/[^A-Z0-9 ]/g,'').trim();
  if(/^4E?DMUSI/.test(v)||/^4EDMUS/.test(v))return '4e';
  if(/^([3456])([A-Z])$/.test(v))return v[1]+v[2];
@@ -383,17 +383,25 @@ async function readSchedulePhoto(){
   const bitmap=await createImageBitmap(f),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
   canvas.width=bitmap.width;canvas.height=bitmap.height;ctx.drawImage(bitmap,0,0);
   const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],x0=.0565,x1=.5755,y0=.1900,y1=.8306,colW=(x1-x0)/5,rowH=(y1-y0)/10,slots=[];
+  const worker=await Tesseract.createWorker('fra');
+  await worker.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz[]- '});
   for(let d=0;d<5;d++)for(let h=0;h<10;h++){
     status.textContent=`Lecture des cases… ${d*10+h+1}/50`;
     const sx=Math.round((x0+d*colW+.08*colW)*canvas.width),ex=Math.round((x0+(d+1)*colW-.08*colW)*canvas.width);
     const sy=Math.round((y0+h*rowH+.12*rowH)*canvas.height),ey=Math.round((y0+(h+1)*rowH-.12*rowH)*canvas.height);
-    const cw=Math.max(1,ex-sx),ch=Math.max(1,ey-sy),crop=document.createElement('canvas');crop.width=cw*2;crop.height=ch*2;
-    crop.getContext('2d').drawImage(canvas,sx,sy,cw,ch,0,0,cw*2,ch*2);
-    const result=await Tesseract.recognize(crop,'fra',{logger:m=>{if(m.status==='recognizing text')status.textContent=`Lecture des cases… ${d*10+h+1}/50 (${Math.round((m.progress||0)*100)} %)`}});
+    const cw=Math.max(1,ex-sx),ch=Math.max(1,ey-sy),crop=document.createElement('canvas');crop.width=cw*4;crop.height=ch*4;
+    const cc=crop.getContext('2d');cc.imageSmoothingEnabled=true;cc.imageSmoothingQuality='high';cc.drawImage(canvas,sx,sy,cw,ch,0,0,cw*4,ch*4);
+    const pixels=cc.getImageData(0,0,crop.width,crop.height),data=pixels.data;
+    for(let p=0;p<data.length;p+=4){const lum=.299*data[p]+.587*data[p+1]+.114*data[p+2],v=lum<172?0:255;data[p]=data[p+1]=data[p+2]=v;data[p+3]=255;}
+    cc.putImageData(pixels,0,0);
+    const result=await worker.recognize(crop);
     const text=(result.data.text||'').replace(/\s+/g,' ').trim(),label=scheduleClassName(text);
-    if(label&&/[3456]/.test(label)&&!/^(?:-|—|_+|\.+)$/.test(label))slots.push({day:d,start:8+h,end:9+h,label,confidence:Math.round(result.data.confidence||0)});
+    if(/^[3456]e?(?:\s+[A-Z0-9]+)*$/i.test(label)&&/[3456]/.test(label)){
+      slots.push({day:d,start:8+h,end:9+h,label,confidence:Math.round(result.data.confidence||0)});
+    }
   }
-  bitmap.close();raw.value=slots.map(s=>`${days[s.day]} ${s.start}h-${s.end}h : ${s.label}`).join('\n');pendingScheduleCells=slots;
+  await worker.terminate();bitmap.close();
+  raw.value=slots.map(s=>`${days[s.day]} ${s.start}h-${s.end}h : ${s.label}`).join('\n');pendingScheduleCells=slots;
   renderScheduleGridReview();status.textContent=`Analyse terminée : ${slots.length} case(s) de cours détectée(s) sur 50. Vérifie les résultats ci-dessous.`;
   if(!slots.length)status.textContent+=' Aucune case exploitable : essaie une capture complète et bien cadrée.';
  }catch(e){console.error(e);status.textContent='Échec de la reconnaissance. Vérifie la connexion et réessaie avec une capture nette.'}
