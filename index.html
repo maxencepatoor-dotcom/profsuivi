@@ -93,7 +93,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 .section-kicker{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8794aa;font-weight:800;margin:0 0 8px 2px}.bottom button:focus-visible,button:focus-visible{outline:3px solid #7c9aff;outline-offset:2px}
 @media(max-width:390px){.hud{gap:6px}.hud-tile{padding:9px}.hud-value{font-size:20px}.hud-label{font-size:10px}.brandtitle{font-size:19px}}
 
-/* V7.9.0 — générateur progressif de séquences */
+/* V7.9.5 — générateur progressif de séquences */
 .seq-stepper{display:flex;gap:6px;overflow:auto;padding:4px 0 12px}.seq-step{flex:0 0 auto;border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:12px;background:#f8fafc;color:#475569}.seq-step.current{background:#172554;color:#fff;border-color:#172554}.seq-step.done{background:#dcfce7;color:#166534;border-color:#bbf7d0}.seq-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin:9px 0;background:#fff}.seq-card h3{margin-bottom:5px}.seq-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.seq-actions button{flex:1}.seq-preview{white-space:pre-wrap;line-height:1.5;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px}.seq-library-item{border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0;background:#fff}.seq-library-item p{margin:5px 0;color:var(--muted);font-size:12px}
 </style>
 </head>
@@ -219,7 +219,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V7.9.0</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V7.9.5</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -1245,16 +1245,19 @@ function confirmPhotoGradeImport(){
 }
 
 
-// V7.9.0 — Générateur progressif. Les séquences sont conservées dans la sauvegarde locale ProfSuivi.
-const SEQ_STEPS=[
- {title:'Définition',hint:'Niveau, thème, durée et intention pédagogique.'},
- {title:'Œuvres',hint:'Sélection des œuvres et justification de leur intérêt.'},
- {title:'Problématique',hint:'Question centrale qui donne une cohérence à la séquence.'},
- {title:'Projet musical',hint:'Production attendue, organisation et critères de réussite.'},
- {title:'Compétences',hint:'Compétences et apprentissages réellement travaillés.'},
- {title:'Séances',hint:'Progression détaillée séance par séance.'},
- {title:'Fiches & évaluations',hint:'Supports élèves, corrigés, évaluations et barèmes.'}
-];
+// V7.9.5 — Générateur progressif. Les séquences sont conservées dans la sauvegarde locale ProfSuivi.
+// V7.9.5 — tableau obtenu via une fonction déclarée (hoistée) pour éviter toute erreur TDZ.
+function getSeqSteps(){
+ return [
+  {title:'Définition',hint:'Niveau, thème, durée et intention pédagogique.'},
+  {title:'Œuvres',hint:'Sélection des œuvres et justification de leur intérêt.'},
+  {title:'Problématique',hint:'Question centrale qui donne une cohérence à la séquence.'},
+  {title:'Projet musical',hint:'Production attendue, organisation et critères de réussite.'},
+  {title:'Compétences',hint:'Compétences et apprentissages réellement travaillés.'},
+  {title:'Séances',hint:'Progression détaillée séance par séance.'},
+  {title:'Fiches & évaluations',hint:'Supports élèves, corrigés, évaluations et barèmes.'}
+ ];
+}
 function seqStore(){db.sequenceLibrary=db.sequenceLibrary||[];db.sequenceDraft=db.sequenceDraft||null;return db}
 function newSequenceDraft(){
  try{
@@ -1276,7 +1279,7 @@ function renderSequenceStep(){let d=db.sequenceDraft;if(!d)return renderSequence
  if(n===4)content=seqField('seq_skills','Compétences et apprentissages',d.skills,'Compétences du programme, savoir-faire musicaux et vocabulaire.',true);
  if(n===5)content=seqField('seq_lessons','Progression détaillée',d.lessons,'Séance 1 : objectif, œuvre, activité, trace écrite…\nSéance 2 : …',true);
  if(n===6)content=seqField('seq_studentSheets','Fiches élèves',d.studentSheets,'Consignes, questions d’écoute, exercices et espaces de réponse.',true)+seqField('seq_teacherNotes','Fiches professeur / corrigés',d.teacherNotes,'Réponses attendues, points d’écoute, repères et différenciation.',true)+seqField('seq_assessment','Évaluations et barèmes',d.assessment,'Évaluation diagnostique, formative, sommative et barème.',true);
- document.getElementById('sequenceHome').innerHTML=`<div class="row between"><button class="small" onclick="renderSequenceHome()">← Bibliothèque</button><span class="pill">Étape ${n+1}/7</span></div><div class="seq-stepper">${SEQ_STEPS.map((x,i)=>`<button class="seq-step ${i===n?'current':i<n?'done':''}" onclick="sequenceGoStep(${i})">${i+1}. ${x.title}</button>`).join('')}</div><h3>${SEQ_STEPS[n].title}</h3><p class="muted">${SEQ_STEPS[n].hint}</p><div class="seq-card">${content}</div><div class="seq-actions">${n?'<button onclick="sequenceGoStep('+(n-1)+')">← Précédent</button>':''}${n<6?'<button class="primary" onclick="sequenceNext()">Enregistrer et continuer →</button>':'<button class="primary" onclick="saveCompletedSequence()">Enregistrer dans ma bibliothèque</button>'}</div><p class="muted" style="margin-top:8px">Brouillon enregistré automatiquement sur cet appareil. Dernière modification : ${new Date(d.updatedAt||Date.now()).toLocaleString('fr-FR')}</p>`;
+ document.getElementById('sequenceHome').innerHTML=`<div class="row between"><button class="small" onclick="renderSequenceHome()">← Bibliothèque</button><span class="pill">Étape ${n+1}/7</span></div><div class="seq-stepper">${getSeqSteps().map((x,i)=>`<button class="seq-step ${i===n?'current':i<n?'done':''}" onclick="sequenceGoStep(${i})">${i+1}. ${x.title}</button>`).join('')}</div><h3>${getSeqSteps()[n].title}</h3><p class="muted">${getSeqSteps()[n].hint}</p><div class="seq-card">${content}</div><div class="seq-actions">${n?'<button onclick="sequenceGoStep('+(n-1)+')">← Précédent</button>':''}${n<6?'<button class="primary" onclick="sequenceNext()">Enregistrer et continuer →</button>':'<button class="primary" onclick="saveCompletedSequence()">Enregistrer dans ma bibliothèque</button>'}</div><p class="muted" style="margin-top:8px">Brouillon enregistré automatiquement sur cet appareil. Dernière modification : ${new Date(d.updatedAt||Date.now()).toLocaleString('fr-FR')}</p>`;
 }
 function sequenceGoStep(i){updateSequenceDraft();db.sequenceDraft.step=i;save();renderSequenceStep()}
 function sequenceNext(){updateSequenceDraft();let d=db.sequenceDraft;if(d.step===0&&(!d.title.trim()||!d.theme.trim()))return alert('Renseigne au minimum le titre et le thème.');if(d.step===1&&!d.works.trim())return alert('Ajoute au moins une œuvre, même provisoire.');d.step=Math.min(6,d.step+1);save();renderSequenceStep()}
@@ -1286,7 +1289,7 @@ function editSavedSequence(id){let x=(db.sequenceLibrary||[]).find(a=>a.id===id)
 function duplicateSavedSequence(id){let x=(db.sequenceLibrary||[]).find(a=>a.id===id);if(!x)return;let y={...x,id:uid(),title:x.title+' (copie)',step:0};delete y.savedAt;db.sequenceDraft=y;save();renderSequenceStep()}
 function deleteSavedSequence(id){if(!confirm('Supprimer cette séquence enregistrée ?'))return;db.sequenceLibrary=(db.sequenceLibrary||[]).filter(x=>x.id!==id);save();renderSequenceHome()}
 
-// V7.9.0 — prevent browser autofill/BFCache from leaving a stale class filter active.
+// V7.9.5 — prevent browser autofill/BFCache from leaving a stale class filter active.
 // The reset only clears the search field; it never changes saved classes or student data.
 function restoreClassListIfHidden(){
  const input=document.getElementById('classSearch');
