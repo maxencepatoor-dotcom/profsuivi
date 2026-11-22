@@ -125,7 +125,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.1.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -274,7 +274,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.1.0</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.0</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -306,8 +306,12 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
   <div id="schedulePhotoPreview" class="muted" style="margin-top:8px"></div>
   <button class="primary" style="width:100%;margin-top:10px" onclick="readSchedulePhoto()">Analyser la photo / image</button>
   <p class="muted" style="font-size:12px">L'OCR nécessite une connexion lors du premier chargement du moteur. La photo est analysée dans le navigateur ; le résultat doit être vérifié avant validation. Les PDF peuvent être ajoutés comme référence, mais l'OCR PDF n'est pas encore activé.</p>
-  <label>Texte reconnu (modifiable avant validation)</label><textarea id="scheduleOCRText" rows="5" placeholder="Le texte extrait de la photo apparaîtra ici. Vérifie les jours, horaires et classes."></textarea>
-  <button onclick="saveScheduleImport()" class="primary" style="width:100%;margin-top:8px">Enregistrer cet emploi du temps</button>
+  <label>Reconnaissance de la grille Pronote</label>
+  <p class="muted">L'analyse repère les cases par jour et par heure. Vérifie chaque cours détecté avant de l'ajouter au planning.</p>
+  <div id="scheduleGridStatus" class="muted">Aucune analyse effectuée.</div>
+  <div id="scheduleGridReview"></div>
+  <button id="scheduleGridSave" onclick="saveScheduleGridImport()" class="primary hidden" style="width:100%;margin-top:8px">Valider les cours détectés</button>
+  <details style="margin-top:10px"><summary>Afficher le texte OCR brut</summary><textarea id="scheduleOCRText" rows="5" placeholder="Texte brut reconnu"></textarea></details>
   <div id="scheduleList" style="margin-top:14px"></div>
  </div>
  <div class="panel">
@@ -336,7 +340,7 @@ const PEDAGOGICAL_LIBRARY = {"nom":"Bibliothèque documentaire enrichie – Édu
 
 const KEY='profsuivi_solo_v4';
 let db=load(), currentClass=null, currentStudent=null, page='home';
-db.planningSchedules=db.planningSchedules||[];db.planningLessons=db.planningLessons||[];db.schoolZone=db.schoolZone||'B';db.schoolYear=db.schoolYear||'2026-2027';
+db.planningSchedules=db.planningSchedules||[];db.planningLessons=db.planningLessons||[];db.planningSlots=db.planningSlots||[];db.schoolZone=db.schoolZone||'B';db.schoolYear=db.schoolYear||'2026-2027';
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{classes:[]}}catch(e){return {classes:[]}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -350,15 +354,83 @@ function renderPlanning(){
  renderScheduleList();renderPlanningWeek();
 }
 function saveSchoolZone(){db.schoolZone=document.getElementById('schoolZone').value;db.schoolYear=document.getElementById('schoolYear').value;save()}
+
 function getScheduleFile(){return document.getElementById('schedulePhoto').files?.[0]||document.getElementById('scheduleCamera').files?.[0]||null}
-function previewSchedulePhoto(input){const f=input.files?.[0],box=document.getElementById('schedulePhotoPreview');if(!f)return;document.getElementById(input.id==='schedulePhoto'?'scheduleCamera':'schedulePhoto').value='';box.textContent=f.name+' · '+Math.round(f.size/1024)+' Ko';if(f.type.startsWith('image/')){const u=URL.createObjectURL(f);box.innerHTML=`<div>${f.name} · ${Math.round(f.size/1024)} Ko</div><img src="${u}" alt="Aperçu de l'emploi du temps" style="max-width:100%;max-height:260px;border-radius:12px;margin-top:8px">`}}
-async function readSchedulePhoto(){const f=getScheduleFile();if(!f)return alert('Choisis d’abord une photo ou une image.');if(!f.type.startsWith('image/'))return alert('Pour cette version, l’analyse OCR fonctionne avec les photos et images. Le PDF peut être conservé comme référence mais son analyse automatique sera ajoutée ultérieurement.');const out=document.getElementById('scheduleOCRText');out.value='Chargement du moteur de reconnaissance…';try{if(!window.Tesseract){await new Promise((ok,no)=>{let sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}out.value='Lecture de la photo en cours…';const result=await Tesseract.recognize(f,'fra+eng',{logger:m=>{if(m.status==='recognizing text')out.placeholder='Reconnaissance : '+Math.round((m.progress||0)*100)+' %'}});out.value=result.data.text||'';if(!out.value.trim())out.value='Aucun texte reconnu. Essaie une photo plus nette, prise de face, avec une bonne lumière.'}catch(e){out.value='La reconnaissance automatique n’a pas pu démarrer. Vérifie ta connexion et réessaie. Tu peux aussi saisir/coller le texte manuellement.';}}
-function saveScheduleImport(){const school=document.getElementById('scheduleSchool').value.trim()||'Établissement sans nom',text=document.getElementById('scheduleOCRText').value.trim();if(!text)return alert('Analyse une photo ou saisis le texte de l’emploi du temps avant de valider.');const id=uid();db.planningSchedules.push({id,school,year:document.getElementById('scheduleYear').value||db.schoolYear,text,createdAt:new Date().toISOString()});const names=[...text.matchAll(/\b(?:6e|5e|4e|3e|6ème|5ème|4ème|3ème)\s*[A-Z0-9]+\b/gi)].map(x=>x[0].replace(/\s+/g,' ').trim());let made=[];names.forEach(n=>{if(!db.classes.some(c=>c.name.toLocaleLowerCase('fr')===n.toLocaleLowerCase('fr'))){db.classes.push({id:uid(),name:n,students:[]});made.push(n)}});save();document.getElementById('scheduleOCRText').value='';document.getElementById('scheduleSchool').value='';document.getElementById('schedulePhoto').value='';document.getElementById('scheduleCamera').value='';document.getElementById('schedulePhotoPreview').innerHTML='';renderScheduleList();alert('Emploi du temps enregistré pour '+school+'. '+made.length+' classe(s) créée(s) : '+(made.join(', ')||'aucune ; les classes existantes ont été conservées.')+'. Vérifie les classes détectées dans Mes classes. Les créneaux détaillés restent à confirmer/saisir dans le planning.');}
+let pendingScheduleCells=[];
+function previewSchedulePhoto(input){const f=input.files?.[0],box=document.getElementById('schedulePhotoPreview');if(!f)return;document.getElementById(input.id==='schedulePhoto'?'scheduleCamera':'schedulePhoto').value='';box.textContent=f.name+' · '+Math.round(f.size/1024)+' Ko';if(f.type.startsWith('image/')){const u=URL.createObjectURL(f);box.innerHTML=`<div>${esc(f.name)} · ${Math.round(f.size/1024)} Ko</div><img src="${u}" alt="Aperçu de l'emploi du temps" style="max-width:100%;max-height:260px;border-radius:12px;margin-top:8px">`}}
+function scheduleNormalizeLabel(s){
+ let v=String(s||'').replace(/[\[\]{}()]/g,' ').replace(/[|]/g,'I').replace(/\s+/g,' ').trim().toUpperCase();
+ v=v.replace(/^S(?=[A-Z0-9])/,'5').replace(/^4(?=8(?:\s|$))/,'4B');
+ v=v.replace(/\b([3456])\s*E(?:ME)?\b/g,'$1E').replace(/\b([3456])\s*([A-Z])\b/g,'$1$2');
+ v=v.replace(/[^A-Z0-9 ]/g,'').trim();
+ if(/^4E?DMUSI/.test(v)||/^4EDMUS/.test(v))return '4e';
+ if(/^([3456])([A-Z])$/.test(v))return v[1]+v[2];
+ if(/^([3456])E$/.test(v))return v[1]+'e';
+ return v;
+}
+function scheduleClassName(label){
+ const v=scheduleNormalizeLabel(label);
+ if(/^[3456]E [A-Z0-9]+$/.test(v)||/^[3456]E$/.test(v))return v;
+ const m=v.match(/^([3456])([A-Z0-9]+)$/);return m?m[1]+'e '+m[2]:v;
+}
+async function readSchedulePhoto(){
+ const f=getScheduleFile();if(!f)return alert('Choisis d’abord une photo ou une image.');
+ if(!f.type.startsWith('image/'))return alert('L’analyse de grille fonctionne avec une photo ou une image. Le PDF n’est pas encore pris en charge.');
+ const status=document.getElementById('scheduleGridStatus'),review=document.getElementById('scheduleGridReview'),raw=document.getElementById('scheduleOCRText');
+ status.textContent='Chargement du moteur OCR…';review.innerHTML='';document.getElementById('scheduleGridSave').classList.add('hidden');pendingScheduleCells=[];
+ try{
+  if(!window.Tesseract){await new Promise((ok,no)=>{let sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';sc.onload=ok;sc.onerror=no;document.head.appendChild(sc)})}
+  const bitmap=await createImageBitmap(f),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+  canvas.width=bitmap.width;canvas.height=bitmap.height;ctx.drawImage(bitmap,0,0);
+  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],x0=.0565,x1=.5755,y0=.1900,y1=.8306,colW=(x1-x0)/5,rowH=(y1-y0)/10,slots=[];
+  for(let d=0;d<5;d++)for(let h=0;h<10;h++){
+    status.textContent=`Lecture des cases… ${d*10+h+1}/50`;
+    const sx=Math.round((x0+d*colW+.08*colW)*canvas.width),ex=Math.round((x0+(d+1)*colW-.08*colW)*canvas.width);
+    const sy=Math.round((y0+h*rowH+.12*rowH)*canvas.height),ey=Math.round((y0+(h+1)*rowH-.12*rowH)*canvas.height);
+    const cw=Math.max(1,ex-sx),ch=Math.max(1,ey-sy),crop=document.createElement('canvas');crop.width=cw*2;crop.height=ch*2;
+    crop.getContext('2d').drawImage(canvas,sx,sy,cw,ch,0,0,cw*2,ch*2);
+    const result=await Tesseract.recognize(crop,'fra',{logger:m=>{if(m.status==='recognizing text')status.textContent=`Lecture des cases… ${d*10+h+1}/50 (${Math.round((m.progress||0)*100)} %)`}});
+    const text=(result.data.text||'').replace(/\s+/g,' ').trim(),label=scheduleClassName(text);
+    if(label&&/[3456]/.test(label)&&!/^(?:-|—|_+|\.+)$/.test(label))slots.push({day:d,start:8+h,end:9+h,label,confidence:Math.round(result.data.confidence||0)});
+  }
+  bitmap.close();raw.value=slots.map(s=>`${days[s.day]} ${s.start}h-${s.end}h : ${s.label}`).join('\n');pendingScheduleCells=slots;
+  renderScheduleGridReview();status.textContent=`Analyse terminée : ${slots.length} case(s) de cours détectée(s) sur 50. Vérifie les résultats ci-dessous.`;
+  if(!slots.length)status.textContent+=' Aucune case exploitable : essaie une capture complète et bien cadrée.';
+ }catch(e){console.error(e);status.textContent='Échec de la reconnaissance. Vérifie la connexion et réessaie avec une capture nette.'}
+}
+function renderScheduleGridReview(){
+ const box=document.getElementById('scheduleGridReview'),days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'];
+ if(!pendingScheduleCells.length){box.innerHTML='<p class="muted">Aucun cours détecté pour le moment.</p>';document.getElementById('scheduleGridSave').classList.add('hidden');return}
+ box.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr><th>Jour</th><th>Horaire</th><th>Classe détectée (modifiable)</th><th></th></tr></thead><tbody>'+pendingScheduleCells.map((s,i)=>`<tr><td>${days[s.day]}</td><td>${s.start}h–${s.end}h</td><td><input aria-label="Classe ${i+1}" value="${esc(s.label)}" onchange="pendingScheduleCells[${i}].label=this.value" style="width:100%"></td><td><button class="small softred" onclick="pendingScheduleCells.splice(${i},1);renderScheduleGridReview()">×</button></td></tr>`).join('')+'</tbody></table></div>';
+ document.getElementById('scheduleGridSave').classList.remove('hidden');
+}
+function saveScheduleGridImport(){
+ if(!pendingScheduleCells.length)return alert('Aucun cours à enregistrer.');
+ const school=document.getElementById('scheduleSchool').value.trim()||'Établissement sans nom',year=document.getElementById('scheduleYear').value||db.schoolYear,scheduleId=uid(),created=[];
+ pendingScheduleCells.forEach(s=>{
+  const name=scheduleClassName(s.label);if(!name)return;
+  const canon=n=>String(n||'').toLocaleLowerCase('fr').replace(/\s+/g,'').replace(/ème|eme/g,'e');let cl=db.classes.find(c=>canon(c.name)===canon(name));
+  if(!cl){cl={id:uid(),name,students:[]};db.classes.push(cl);created.push(name)}
+  db.planningSlots.push({id:uid(),scheduleId,school,year,day:s.day,start:s.start,end:s.end,classId:cl.id,className:name,source:'photo-pronote'});
+ });
+ db.planningSchedules.push({id:scheduleId,school,year,text:document.getElementById('scheduleOCRText').value,slotCount:pendingScheduleCells.length,createdAt:new Date().toISOString()});
+ save();pendingScheduleCells=[];document.getElementById('scheduleGridReview').innerHTML='';document.getElementById('scheduleGridSave').classList.add('hidden');document.getElementById('scheduleGridStatus').textContent='Emploi du temps enregistré. Les cours apparaissent dans Ma semaine.';document.getElementById('scheduleSchool').value='';document.getElementById('schedulePhoto').value='';document.getElementById('scheduleCamera').value='';document.getElementById('schedulePhotoPreview').innerHTML='';renderScheduleList();renderPlanningWeek();
+ alert('Emploi du temps enregistré. Classes créées : '+(created.join(', ')||'aucune (classes existantes réutilisées)')+'.');
+}
 function renderScheduleList(){const el=document.getElementById('scheduleList');if(!el)return;el.innerHTML=db.planningSchedules.length?db.planningSchedules.map(x=>`<div class="notice" style="margin:8px 0"><b>${esc(x.school)}</b> · ${esc(x.year)}<div class="muted">Importé le ${new Date(x.createdAt).toLocaleDateString('fr-FR')} · Texte conservé (${x.text.length} caractères)</div><button class="small softred" onclick="deleteSchedule('${x.id}')">Supprimer cet emploi du temps</button></div>`).join(''):'<p class="muted">Aucun emploi du temps importé pour le moment.</p>'}
 function deleteSchedule(id){if(!confirm('Supprimer cet emploi du temps ? Les classes et les séances déjà créées seront conservées.'))return;db.planningSchedules=db.planningSchedules.filter(x=>x.id!==id);save();renderScheduleList()}
 function addPlanningLesson(){document.getElementById('lessonDate').value=new Date().toISOString().slice(0,10);document.getElementById('lessonTitle').focus()}
 function savePlanningLesson(){const date=document.getElementById('lessonDate').value,cl=document.getElementById('lessonClass').value,title=document.getElementById('lessonTitle').value.trim();if(!date||!title)return alert('Indique une date et un titre de séance.');db.planningLessons.push({id:uid(),date,classId:cl,title,content:document.getElementById('lessonContent').value.trim(),materials:document.getElementById('lessonMaterials').value.trim(),done:false});save();document.getElementById('lessonTitle').value='';document.getElementById('lessonContent').value='';document.getElementById('lessonMaterials').value='';renderPlanningWeek();alert('Séance enregistrée.');}
-function renderPlanningWeek(){const box=document.getElementById('planningWeek');if(!box)return;const v=document.getElementById('weekStart').value||new Date().toISOString().slice(0,10),start=new Date(v+'T12:00:00');const end=new Date(start);end.setDate(start.getDate()+6);const items=db.planningLessons.filter(x=>{const d=new Date(x.date+'T12:00:00');return d>=start&&d<=end}).sort((a,b)=>a.date.localeCompare(b.date));box.innerHTML=items.length?items.map(x=>{const c=db.classes.find(z=>z.id===x.classId);return `<div class="notice" style="margin:8px 0"><div class="row between"><b>${new Date(x.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</b><button class="small" onclick="toggleLessonDone('${x.id}')">${x.done?'Réalisée ✓':'À faire'}</button></div><b>${esc(c?.name||'Classe à préciser')} — ${esc(x.title)}</b>${x.content?`<p>${esc(x.content)}</p>`:''}${x.materials?`<small>Matériel : ${esc(x.materials)}</small>`:''}<button class="small softred" onclick="deletePlanningLesson('${x.id}')">Supprimer</button></div>`}).join(''):'<p class="muted">Aucune séance planifiée cette semaine. Ajoute tes contenus ci-dessus.</p>'}
+
+function renderPlanningWeek(){
+ const box=document.getElementById('planningWeek');if(!box)return;
+ const dayNames=['Lundi','Mardi','Mercredi','Jeudi','Vendredi'],recurring=(db.planningSlots||[]).slice().sort((a,b)=>a.day-b.day||a.start-b.start);
+ const v=document.getElementById('weekStart').value||new Date().toISOString().slice(0,10),start=new Date(v+'T12:00:00'),end=new Date(start);end.setDate(start.getDate()+6);
+ const items=db.planningLessons.filter(x=>{const d=new Date(x.date+'T12:00:00');return d>=start&&d<=end}).sort((a,b)=>a.date.localeCompare(b.date));let out='';
+ if(recurring.length){out+='<h3>Emploi du temps hebdomadaire importé</h3>'+dayNames.map((day,i)=>{const rows=recurring.filter(s=>s.day===i);return rows.length?`<div class="notice" style="margin:7px 0"><b>${day}</b>${rows.map(s=>`<div style="padding:5px 0;border-top:1px solid #ddd"><b>${String(s.start).padStart(2,'0')}:00–${String(s.end).padStart(2,'0')}:00</b> · ${esc(s.className)} <small>(${esc(s.school)})</small></div>`).join('')}</div>`:''}).join('')}
+ if(items.length)out+='<h3>Séances préparées pour cette semaine</h3>'+items.map(x=>{const c=db.classes.find(z=>z.id===x.classId);return `<div class="notice" style="margin:8px 0"><div class="row between"><b>${new Date(x.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</b><button class="small" onclick="toggleLessonDone('${x.id}')">${x.done?'Réalisée ✓':'À faire'}</button></div><b>${esc(c?.name||'Classe à préciser')} — ${esc(x.title)}</b>${x.content?`<p>${esc(x.content)}</p>`:''}${x.materials?`<small>Matériel : ${esc(x.materials)}</small>`:''}<button class="small softred" onclick="deletePlanningLesson('${x.id}')">Supprimer</button></div>`}).join('');
+ box.innerHTML=out||'<p class="muted">Aucun emploi du temps importé ou séance planifiée cette semaine.</p>';
+}
 function toggleLessonDone(id){const x=db.planningLessons.find(a=>a.id===id);if(x){x.done=!x.done;save();renderPlanningWeek()}}
 function deletePlanningLesson(id){if(!confirm('Supprimer cette séance ?'))return;db.planningLessons=db.planningLessons.filter(x=>x.id!==id);save();renderPlanningWeek()}
 
