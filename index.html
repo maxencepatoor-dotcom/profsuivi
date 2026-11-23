@@ -125,7 +125,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.3</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V8.2.4</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -274,7 +274,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 
 <section id="sequenceView" class="hidden">
  <div class="panel">
-  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.3</span></div>
+  <div class="row between"><div><h2>Générateur de séquences</h2><p class="muted">Construis ta séquence progressivement. Chaque étape est modifiable et le brouillon est sauvegardé sur cet appareil.</p></div><span class="pill">V8.2.4</span></div>
   <div id="sequenceHome"></div>
  </div>
 </section>
@@ -294,7 +294,7 @@ input,select,textarea{border-radius:12px;border-color:#d6deeb;background:#fff}in
 <section id="planningView" class="hidden">
  <div class="row between"><div><div class="section-kicker">Organisation pédagogique</div><h1>Mon organisation</h1></div><button class="small" onclick="go('home')">← Accueil</button></div>
  <div class="panel">
-  <h2>Mes emplois du temps</h2><p class="muted">Ajoute un emploi du temps par établissement ou complément de service. Les imports sont cumulés sans recréer les classes existantes.</p>
+  <div class="row between" style="align-items:center;gap:10px"><h2 style="margin:0">Mes emplois du temps</h2><button class="small softred" type="button" onclick="resetPlanning()">Vider le planning</button></div><p class="muted">Ajoute un emploi du temps par établissement ou complément de service. Les imports sont cumulés sans recréer les classes existantes.</p>
   <div class="grid"><div><label>Établissement / service</label><input id="scheduleSchool" placeholder="Ex. Collège principal"></div><div><label>Année scolaire</label><input id="scheduleYear" value="2026-2027"></div></div>
   <label style="margin-top:10px">Ajouter un emploi du temps</label>
   <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
@@ -497,6 +497,24 @@ function saveScheduleGridImport(){
  alert('Emploi du temps enregistré. Classes créées : '+(created.join(', ')||'aucune (classes existantes réutilisées)')+'.');
 }
 function renderScheduleList(){const el=document.getElementById('scheduleList');if(!el)return;el.innerHTML=db.planningSchedules.length?db.planningSchedules.map(x=>`<div class="notice" style="margin:8px 0"><b>${esc(x.school)}</b> · ${esc(x.year)}<div class="muted">Importé le ${new Date(x.createdAt).toLocaleDateString('fr-FR')} · Texte conservé (${x.text.length} caractères)</div><button class="small softred" onclick="deleteSchedule('${x.id}')">Supprimer cet emploi du temps</button></div>`).join(''):'<p class="muted">Aucun emploi du temps importé pour le moment.</p>'}
+function resetPlanning(){
+ const scheduleCount=(db.planningSchedules||[]).length,slotCount=(db.planningSlots||[]).length,lessonCount=(db.planningLessons||[]).length;
+ if(!scheduleCount&&!slotCount&&!lessonCount){alert('Le planning est déjà vide.');return}
+ const message='Vider entièrement le planning ?\n\nSeront supprimés :\n• '+slotCount+' cours récurrents importés\n• '+scheduleCount+' emploi(s) du temps enregistré(s)\n• '+lessonCount+' séance(s) préparée(s) dans Ma semaine\n\nTes classes, élèves, séquences, évaluations, appréciations et le calendrier scolaire seront conservés.';
+ if(!confirm(message))return;
+ db.planningSchedules=[];db.planningSlots=[];db.planningLessons=[];pendingScheduleCells=[];
+ save();
+ const review=document.getElementById('scheduleGridReview');if(review)review.innerHTML='';
+ const saveButton=document.getElementById('scheduleGridSave');if(saveButton)saveButton.classList.add('hidden');
+ const status=document.getElementById('scheduleGridStatus');if(status)status.textContent='Planning vidé. Tu peux importer un nouvel emploi du temps.';
+ const ocr=document.getElementById('scheduleOCRText');if(ocr)ocr.value='';
+ const school=document.getElementById('scheduleSchool');if(school)school.value='';
+ const photo=document.getElementById('schedulePhotoPreview');if(photo)photo.innerHTML='';
+ const photoInput=document.getElementById('schedulePhoto');if(photoInput)photoInput.value='';
+ const cameraInput=document.getElementById('scheduleCamera');if(cameraInput)cameraInput.value='';
+ renderScheduleList();renderPlanningWeek();
+ alert('Le planning a été vidé. Toutes les autres données pédagogiques ont été conservées.');
+}
 function deleteSchedule(id){if(!confirm('Supprimer cet emploi du temps ? Les classes et les séances déjà créées seront conservées.'))return;db.planningSchedules=db.planningSchedules.filter(x=>x.id!==id);save();renderScheduleList()}
 function addPlanningLesson(){document.getElementById('lessonDate').value=new Date().toISOString().slice(0,10);document.getElementById('lessonTitle').focus()}
 function savePlanningLesson(){const date=document.getElementById('lessonDate').value,cl=document.getElementById('lessonClass').value,title=document.getElementById('lessonTitle').value.trim();if(!date||!title)return alert('Indique une date et un titre de séance.');db.planningLessons.push({id:uid(),date,classId:cl,title,content:document.getElementById('lessonContent').value.trim(),materials:document.getElementById('lessonMaterials').value.trim(),done:false});save();document.getElementById('lessonTitle').value='';document.getElementById('lessonContent').value='';document.getElementById('lessonMaterials').value='';renderPlanningWeek();alert('Séance enregistrée.');}
