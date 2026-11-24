@@ -195,7 +195,7 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V9.0.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V9.0.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -1277,10 +1277,35 @@ function buildAppreciation(s,variant=0){
  return composeBulletinText(opening,details,first);
 }
 function prepareClassBulletins(){
- const c=cls();if(!c)return;
- const q=document.getElementById('bulletinQuarter')?.value||'T1';
- bulletinDrafts=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>({id:s.id,name:s.name,text:buildAppreciation(s,0),variant:0,criteria:{...studentBulletinCriteria(s)},quarter:q}));
- renderBulletinEditor();
+ const box=document.getElementById('bulletinEditor');
+ try{
+  let c=cls();
+  if(!c){
+   if(box)box.innerHTML='<p class="notice">Aucune classe sélectionnée. Sélectionne d’abord une classe, puis relance la préparation des appréciations.</p>';
+   return;
+  }
+  const students=Array.isArray(c.students)?c.students:[];
+  if(!students.length){
+   bulletinDrafts=[];
+   if(box)box.innerHTML='<p class="notice">Cette classe ne contient aucun élève. Vérifie la classe sélectionnée.</p>';
+   return;
+  }
+  const q=document.getElementById('bulletinQuarter')?.value||'T1';
+  const drafts=students.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'fr')).map(s=>{
+   const criteria={...studentBulletinCriteria(s)};
+   const text=buildAppreciation(s,0);
+   return {id:s.id,name:s.name||'Élève sans nom',text,variant:0,criteria,quarter:q};
+  });
+  bulletinDrafts=drafts;
+  renderBulletinEditor();
+  if(box && drafts.length && !box.querySelector('.bulletin-card')){
+   box.innerHTML='<p class="notice">Les appréciations ont été préparées, mais leur affichage a échoué. Réessaie ; si le problème persiste, signale-le.</p>';
+  }
+ }catch(error){
+  console.error('Erreur préparation des appréciations :',error);
+  bulletinDrafts=[];
+  if(box)box.innerHTML='<p class="notice" role="alert">La préparation des appréciations a rencontré une erreur : '+esc(error?.message||String(error))+'</p>';
+ }
 }
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
