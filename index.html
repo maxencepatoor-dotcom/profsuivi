@@ -195,7 +195,7 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.1</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -1109,7 +1109,7 @@ function setStudentGender(value){
 function genderWord(s,masculine,feminine){const g=inferStudentGender(s);return g==='f'?feminine:g==='n'?masculine:masculine}
 
 function bulletinFirstName(s){
- if(s.firstName)return String(s.firstName).trim();
+ if(s.firstName){const n=String(s.firstName).trim();return n? n.charAt(0).toLocaleUpperCase('fr')+n.slice(1):'';}
  const raw=String(s.name||'').trim();if(!raw)return 'L’élève';
  const parts=raw.split(/\s+/);return parts.length>1?parts[parts.length-1]:parts[0];
 }
@@ -1174,54 +1174,48 @@ function bulletinEvolution(s,q,current,variant=0){
  return `Depuis le trimestre précédent, ${parts.join(' et ')}.`;
 }
 
-function composeBulletinText(opening,details,first){
- // Rédaction éditoriale : sélectionner les informations utiles, éviter l'effet catalogue.
- const clean = (details||[]).map(raw=>String(raw??'').replace(/\s+/g,' ').trim()).filter(Boolean);
- const normalized = s => s.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
- const chosen=[], seen=new Set();
- const topicOf = s => {
-  const t=normalized(s);
-  if(/bavard|prise de parole|intervention|interromp/.test(t))return 'comportement';
+function composeBulletinText(opening,details,first,studentProfile){
+ // Une appréciation courte : deux idées maximum, sans connecteurs artificiels.
+ const canonicalName=String(first||'').trim().replace(/\s+/g,' ');
+ const capitalizeName=value=>value?value.charAt(0).toLocaleUpperCase('fr')+value.slice(1):'';
+ const name=capitalizeName(canonicalName);
+ const normalized=value=>String(value||'').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const topicOf=value=>{
+  const t=normalized(value);
   if(/materiel|affaires|oubli/.test(t))return 'materiel';
   if(/travail personnel|devoir|lecon|revision|maison/.test(t))return 'travail';
-  if(/particip|oral|parole/.test(t))return 'participation';
+  if(/particip|oral|prise de parole|parole/.test(t))return 'participation';
+  if(/bavard|intervention|interromp|comportement|attitude/.test(t))return 'comportement';
   if(/attention|concentr|distraction|ecoute/.test(t))return 'attention';
   if(/invest|implication|activit|projet|passif|initiative|persever/.test(t))return 'implication';
   if(/resultat|moyenne|note/.test(t))return 'resultats';
-  return 'autre';
+  return 'autre:'+t.slice(0,36);
  };
- // Conserver une seule formulation par thème, en privilégiant l'observation personnelle.
- const sorted=[...clean].sort((a,b)=>(/observation/i.test(a)?-1:0)-(/observation/i.test(b)?-1:0));
+ const clean=(details||[]).map(raw=>String(raw??'').replace(/\s+/g,' ').trim()).filter(Boolean);
+ // L'observation personnelle est prioritaire ; les autres critères sont regroupés par thème.
+ const sorted=[...clean].sort((a,b)=>Number(/observation personnelle/i.test(b))-Number(/observation personnelle/i.test(a)));
+ const chosen=[],seen=new Set();
  for(const sentence of sorted){
   const topic=topicOf(sentence);
   if(seen.has(topic))continue;
   seen.add(topic);chosen.push(sentence);
  }
- // Une appréciation lisible ne doit pas devenir une liste : trois idées fortes suffisent.
- const limited=chosen.slice(0,3);
- const name=String(first||'').trim();
- let nameUsed=false;
- const sentences=limited.map((raw,i)=>{
-  let s=raw.replace(/\s+([,.;!?])/g,'$1').replace(/[.!?…]+$/,'').trim();
+ const limited=chosen.slice(0,2);
+ const sentences=limited.map(raw=>{
+  let sentence=raw.replace(/\s+([,.;!?])/g,'$1').replace(/[.!?…]+$/,'').trim();
   if(name){
-   const re=new RegExp('\\b'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','giu');
-   s=s.replace(re,()=>{if(!nameUsed){nameUsed=true;return name;}return 'elle';});
+   const escaped=canonicalName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+   const re=new RegExp('\\b'+escaped+'\\b','giu');
+   let occurrences=0;
+   sentence=sentence.replace(re,()=>++occurrences===1?name:'l’élève');
   }
-  // Réparer les accords masculins restés dans les banques historiques si le profil est féminin.
-  if(first && typeof student==='function'){
-   const current=student();
-   if(current && bulletinFirstName(current)===first && studentIsFeminine(current)){
-    s=s.replace(/\bil\b/gi,'elle').replace(/\bsollicité\b/gi,'sollicitée').replace(/\bconcentré\b/gi,'concentrée').replace(/\battentif\b/gi,'attentive').replace(/\bdiscret\b/gi,'discrète').replace(/\binvesti\b/gi,'investie');
-   }
-  }
-  if(i===1 && !/^(En |Le |La |Les |Une |Un |Il |Elle |Depuis |Toutefois|Cependant)/i.test(s))s='En classe, '+s.charAt(0).toLocaleLowerCase('fr')+s.slice(1);
-  if(i===2 && !/^(En |Le |La |Les |Une |Un |Il |Elle |Depuis |Toutefois|Cependant)/i.test(s))s='Enfin, '+s.charAt(0).toLocaleLowerCase('fr')+s.slice(1);
-  return s+'.';
+  sentence=sentence.charAt(0).toLocaleUpperCase('fr')+sentence.slice(1);
+  return sentence+'.';
  });
- let text=String(opening||'Ensemble satisfaisant')+'.';
- if(sentences.length)text+=' '+sentences.join(' ');
- else text+=' Le travail doit être poursuivi avec régularité.';
- return text.trim();
+ let result=String(opening||'Ensemble satisfaisant').trim().replace(/[.!?…]+$/,'')+'.';
+ if(sentences.length)result+=' '+sentences.join(' ');
+ else result+=' Le travail doit être poursuivi avec régularité.';
+ return result.trim();
 }
 
 function buildAppreciation(s,variant=0){
@@ -1302,7 +1296,7 @@ function buildAppreciation(s,variant=0){
  const evolution=bulletinEvolution(s,document.getElementById('bulletinQuarter')?.value||'T1',c);if(evolution)details.push(evolution);
  if(c.recognition==='congratulations')details.push('Félicitations pour ce trimestre !');
  else if(c.recognition==='encouragement')details.push('Les efforts sont encourageants : il faut poursuivre dans cette voie !');
- return composeBulletinText(opening,details,first);
+ return composeBulletinText(opening,details,first,s);
 }
 function prepareClassBulletins(){
  const box=document.getElementById('bulletinEditor');
