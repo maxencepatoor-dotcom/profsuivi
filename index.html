@@ -195,7 +195,7 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.1</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -1175,52 +1175,42 @@ function bulletinEvolution(s,q,current,variant=0){
 }
 
 function composeBulletinText(opening,details,first,studentProfile){
- // Une appréciation courte : deux idées maximum, sans connecteurs artificiels.
- const canonicalName=String(first||'').trim().replace(/\s+/g,' ');
- const capitalizeName=value=>value?value.charAt(0).toLocaleUpperCase('fr')+value.slice(1):'';
- const name=capitalizeName(canonicalName);
- const normalized=value=>String(value||'').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
- const topicOf=value=>{
-  const t=normalized(value);
-  if(/materiel|affaires|oubli/.test(t))return 'materiel';
-  if(/travail personnel|devoir|lecon|revision|maison/.test(t))return 'travail';
-  if(/particip|oral|prise de parole|parole/.test(t))return 'participation';
-  if(/bavard|intervention|interromp|comportement|attitude/.test(t))return 'comportement';
-  if(/attention|concentr|distraction|ecoute/.test(t))return 'attention';
-  if(/invest|implication|activit|projet|passif|initiative|persever/.test(t))return 'implication';
-  if(/resultat|moyenne|note/.test(t))return 'resultats';
-  return 'autre:'+t.slice(0,36);
+ const name=String(first||'').trim().replace(/\s+/g,' ').replace(/^\p{L}/u,ch=>ch.toLocaleUpperCase('fr'));
+ const clean=(details||[]).map(x=>String(x??'').replace(/\s+/g,' ').trim()).filter(Boolean);
+ const norm=x=>String(x||'').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const positiveRe=/serieux|serieuse|applique|investi|investie|particip.*(active|regulier|pertinent|tres bonne)|tres bonne participation|travail.*(qualite|regulier|approfondi)|effort.*(encourageant|soutenu)|autonomie|attentif|attentive|bonne volonte|progres|maitrise|implication.*(positive|reguliere)|satisfaisant.*travail/;
+ const negativeRe=/manque|insuffisant|insuffisante|doit |doivent |attendu|attendue|trop |difficulte|difficultes|bavard|oubli|irrégulier|irregulier|discret|discrete|distraction|superficiel|passif|abandonne|a ameliorer|a renforcer|a approfondir|nu[iî]t|perturb|ne .* pas|pas suffisamment/;
+ const positive=clean.filter(x=>positiveRe.test(norm(x))&&!negativeRe.test(norm(x)));
+ const negative=clean.filter(x=>negativeRe.test(norm(x)));
+ const isWeak=/décevant|satisfaisant/i.test(opening);
+ let point='';
+ if(isWeak&&negative.length)point=negative[0];
+ else if(positive.length)point=positive[0];
+ else if(negative.length)point=negative[0];
+ else if(clean.length)point=clean[0];
+ const polish=x=>{
+  let t=String(x||'').replace(/\s+([,.;!?])/g,'$1').replace(/[.!?…]+$/,'').trim();
+  if(name){const re=new RegExp('\\b'+name.replace(/[.*+?^${}()|[\\]\\\\]/g,'\\$&')+'\\b','giu');let n=0;t=t.replace(re,()=>++n===1?name:'l’élève');}
+  return t?t.charAt(0).toLocaleUpperCase('fr')+t.slice(1)+'.':'';
  };
- const clean=(details||[]).map(raw=>String(raw??'').replace(/\s+/g,' ').trim()).filter(Boolean);
- // L'observation personnelle est prioritaire ; les autres critères sont regroupés par thème.
- const sorted=[...clean].sort((a,b)=>Number(/observation personnelle/i.test(b))-Number(/observation personnelle/i.test(a)));
- const chosen=[],seen=new Set();
- for(const sentence of sorted){
-  const topic=topicOf(sentence);
-  if(seen.has(topic))continue;
-  seen.add(topic);chosen.push(sentence);
+ let advice='Les efforts sont à poursuivre avec régularité.';
+ if(point){
+  const p=norm(point);
+  if(!negative.includes(point))advice='Il faut poursuivre ainsi et conserver cette régularité.';
+  else if(/bavard|comportement|attitude|interromp|consigne|agitation/.test(p))advice='Il faut gagner en calme et en attention pour profiter pleinement des activités.';
+  else if(/particip|oral|parole|discret/.test(p))advice='Il faut oser participer davantage et prendre confiance à l’oral.';
+  else if(/materiel|oubli/.test(p))advice='Il faut penser à apporter le matériel à chaque séance.';
+  else if(/travail personnel|lecon|devoir|revision|effort|approfond/.test(p))advice='Un travail personnel plus régulier et approfondi permettra de progresser.';
+  else if(/concentr|attention|distra/.test(p))advice='Il faut maintenir une attention plus constante pendant les activités.';
+  else advice='Il faut poursuivre les efforts et s’investir plus régulièrement pour progresser.';
  }
- const limited=chosen.slice(0,2);
- const sentences=limited.map(raw=>{
-  let sentence=raw.replace(/\s+([,.;!?])/g,'$1').replace(/[.!?…]+$/,'').trim();
-  if(name){
-   const escaped=canonicalName.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-   const re=new RegExp('\\b'+escaped+'\\b','giu');
-   let occurrences=0;
-   sentence=sentence.replace(re,()=>++occurrences===1?name:'l’élève');
-  }
-  sentence=sentence.charAt(0).toLocaleUpperCase('fr')+sentence.slice(1);
-  return sentence+'.';
- });
- let result=String(opening||'Ensemble satisfaisant').trim().replace(/[.!?…]+$/,'')+'.';
- if(sentences.length)result+=' '+sentences.join(' ');
- else result+=' Le travail doit être poursuivi avec régularité.';
- return result.trim();
+ const head=String(opening||'Ensemble satisfaisant').trim().replace(/[.!?…]+$/,'')+'.';
+ return [head,polish(point),advice].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
 }
 
 function buildAppreciation(s,variant=0){
  const d=bulletinData(s),c=studentBulletinCriteria(s),first=bulletinFirstName(s);
- const opening=d.avg===null?'Ensemble satisfaisant':d.avg>=14?'Très bon trimestre':d.avg>=12?'Bon trimestre':d.avg>=10?'Ensemble satisfaisant':'Ensemble décevant';
+ const opening=d.avg===null?'Ensemble satisfaisant':d.avg>=16?'Excellent trimestre':d.avg>=14?'Très bon trimestre':d.avg>=12?'Bon trimestre':d.avg>=10?'Ensemble satisfaisant':'Ensemble décevant';
  const v=Math.abs(Number(variant)||0)%3,details=[];
  const choose=a=>a[v%a.length];
  const workText={
@@ -1348,7 +1338,7 @@ ${[['very_attentive','Très attentif et concentré'],['listens','Écoute avec s�
  <div style="grid-column:1/-1"><label>Travail personnel – plusieurs choix possibles</label><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:6px;margin-top:6px">
 ${[['regular','Travail régulier et sérieux'],['lessons','Leçons apprises avec soin'],['homework','Devoirs réalisés avec application'],['quality','Travail approfondi et de qualité'],['autonomy','Fait preuve d’autonomie'],['effort','Fournit des efforts pour progresser'],['irregular','Travail personnel irrégulier'],['incomplete','Devoirs incomplets ou oubliés'],['insufficient','Travail personnel insuffisant'],['lessons_weak','Leçons insuffisamment apprises'],['revision','Manque de régularité dans les révisions'],['support','A besoin d’être davantage accompagné'],['autonomy_weak','Manque d’autonomie'],['effort_weak','Ne fournit pas suffisamment d’efforts personnels']].map(([v,l])=>`<label style="display:flex;align-items:flex-start;gap:7px;font-weight:400"><input type="checkbox" data-personalwork="${v}" data-index="${i}" ${(b.criteria.personalWork||[]).includes(v)?'checked':''}>${l}</label>`).join('')}
 </div></div>
- </div><div style="margin-top:8px"><label>Valorisation</label><select data-crit="recognition" data-index="${i}"><option value="none" ${b.criteria.recognition==='none'?'selected':''}>Aucune</option><option value="congratulations" ${b.criteria.recognition==='congratulations'?'selected':''}>Félicitations</option><option value="encouragement" ${b.criteria.recognition==='encouragement'?'selected':''}>Encouragements</option></select></div><label style="display:block;margin-top:8px">Observation personnelle (facultative)</label><textarea data-observation="${i}" placeholder="Un détail précis sur cet élève…">${esc(b.criteria.observation||'')}</textarea><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div>`}).join('');
+ </div><div style="margin-top:8px"><label>Valorisation</label><select data-crit="recognition" data-index="${i}"><option value="none" ${b.criteria.recognition==='none'?'selected':''}>Aucune</option><option value="congratulations" ${b.criteria.recognition==='congratulations'?'selected':''}>Félicitations</option><option value="encouragement" ${b.criteria.recognition==='encouragement'?'selected':''}>Encouragements</option></select></div><label style="display:block;margin-top:8px">Observation personnelle (facultative)</label><textarea data-observation="${i}" placeholder="Un détail précis sur cet élève…">${esc(b.criteria.observation||'')}</textarea><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small" onclick="regenerateBulletin(${i})">Actualiser selon les critères</button><button class="small" onclick="anotherBulletinWording(${i})">Autre formulation</button></div><textarea data-bulletin="${i}">${esc(b.text)}</textarea><div class="row" style="gap:8px;flex-wrap:wrap"><button class="small primary" onclick="copyBulletinText(${i})">Copier l’appréciation</button><button class="small" onclick="printOneBulletin('${b.id}')">PDF de cet élève</button></div></div>`}).join('');
  box.querySelectorAll('select[data-crit]').forEach(el=>el.onchange=()=>{const b=bulletinDrafts[+el.dataset.index],s=cls().students.find(x=>x.id===b.id);b.criteria[el.dataset.crit]=el.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
  box.querySelectorAll('input[data-behavior]').forEach(el=>el.onchange=()=>{const b=bulletinDrafts[+el.dataset.index],s=cls().students.find(x=>x.id===b.id);let values=Array.isArray(b.criteria.behavior)?[...b.criteria.behavior]:[];if(el.checked){if(!values.includes(el.dataset.behavior))values.push(el.dataset.behavior)}else values=values.filter(x=>x!==el.dataset.behavior);b.criteria.behavior=values;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
 
@@ -1364,6 +1354,15 @@ ${[['regular','Travail régulier et sérieux'],['lessons','Leçons apprises avec
  });
  box.querySelectorAll('textarea[data-observation]').forEach(t=>t.oninput=() =>{const b=bulletinDrafts[+t.dataset.observation],s=cls().students.find(x=>x.id===b.id);b.criteria.observation=t.value;if(s){s.bulletinCriteria=s.bulletinCriteria||{};s.bulletinCriteria[b.quarter]={...b.criteria};save();}});
  box.querySelectorAll('textarea[data-bulletin]').forEach(t=>t.oninput=()=>bulletinDrafts[+t.dataset.bulletin].text=t.value);
+}
+async function copyBulletinText(i){
+ const b=bulletinDrafts[i];if(!b)return;
+ const value=String(b.text||'').trim();if(!value)return;
+ try{
+  if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(value);
+  else{const area=document.createElement('textarea');area.value=value;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.focus();area.select();const ok=document.execCommand('copy');area.remove();if(!ok)throw new Error('Copie non disponible');}
+  const buttons=document.querySelectorAll('.bulletin-card');const btn=buttons[i]?.querySelector('button.primary');if(btn){const label=btn.textContent;btn.textContent='Copié !';setTimeout(()=>{if(btn.isConnected)btn.textContent=label},1400);}
+ }catch(error){alert('La copie automatique a échoué. Sélectionne le texte de l’appréciation pour le copier manuellement.');}
 }
 function regenerateBulletin(i){
  const b=bulletinDrafts[i],s=cls().students.find(x=>x.id===b.id);if(!s)return;
