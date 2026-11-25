@@ -195,7 +195,7 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V9.0.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.0</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -1175,25 +1175,53 @@ function bulletinEvolution(s,q,current,variant=0){
 }
 
 function composeBulletinText(opening,details,first){
- // Assemble de vraies phrases : ne jamais ajouter le prénom devant une phrase
- // qui possède déjà son propre sujet (ex. « Des bavardages… »).
- let nameSeen=false;
- const escaped=String(first||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
- const namePattern=escaped?new RegExp('\\b'+escaped+'\\b','giu'):null;
- const sentences=(details||[]).map(raw=>{
-  let sentence=String(raw??'').replace(/\s+/g,' ').trim();
-  if(!sentence)return '';
-  if(namePattern){
-   sentence=sentence.replace(namePattern,(match,offset)=>{
-    if(!nameSeen){nameSeen=true;return match;}
-    return sentence.slice(0,offset).trim().length===0?'L’élève':'l’élève';
-   });
+ // Rédaction éditoriale : sélectionner les informations utiles, éviter l'effet catalogue.
+ const clean = (details||[]).map(raw=>String(raw??'').replace(/\s+/g,' ').trim()).filter(Boolean);
+ const normalized = s => s.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const chosen=[], seen=new Set();
+ const topicOf = s => {
+  const t=normalized(s);
+  if(/bavard|prise de parole|intervention|interromp/.test(t))return 'comportement';
+  if(/materiel|affaires|oubli/.test(t))return 'materiel';
+  if(/travail personnel|devoir|lecon|revision|maison/.test(t))return 'travail';
+  if(/particip|oral|parole/.test(t))return 'participation';
+  if(/attention|concentr|distraction|ecoute/.test(t))return 'attention';
+  if(/invest|implication|activit|projet|passif|initiative|persever/.test(t))return 'implication';
+  if(/resultat|moyenne|note/.test(t))return 'resultats';
+  return 'autre';
+ };
+ // Conserver une seule formulation par thème, en privilégiant l'observation personnelle.
+ const sorted=[...clean].sort((a,b)=>(/observation/i.test(a)?-1:0)-(/observation/i.test(b)?-1:0));
+ for(const sentence of sorted){
+  const topic=topicOf(sentence);
+  if(seen.has(topic))continue;
+  seen.add(topic);chosen.push(sentence);
+ }
+ // Une appréciation lisible ne doit pas devenir une liste : trois idées fortes suffisent.
+ const limited=chosen.slice(0,3);
+ const name=String(first||'').trim();
+ let nameUsed=false;
+ const sentences=limited.map((raw,i)=>{
+  let s=raw.replace(/\s+([,.;!?])/g,'$1').replace(/[.!?…]+$/,'').trim();
+  if(name){
+   const re=new RegExp('\\b'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','giu');
+   s=s.replace(re,()=>{if(!nameUsed){nameUsed=true;return name;}return 'elle';});
   }
-  sentence=sentence.replace(/\s+([,.;!?])/g,'$1');
-  if(!/[.!?…]$/.test(sentence))sentence+='.';
-  return sentence;
- }).filter(Boolean);
- return `${opening}. ${sentences.length?sentences.join(' '):'Le travail doit être poursuivi avec régularité.'}`.trim();
+  // Réparer les accords masculins restés dans les banques historiques si le profil est féminin.
+  if(first && typeof student==='function'){
+   const current=student();
+   if(current && bulletinFirstName(current)===first && studentIsFeminine(current)){
+    s=s.replace(/\bil\b/gi,'elle').replace(/\bsollicité\b/gi,'sollicitée').replace(/\bconcentré\b/gi,'concentrée').replace(/\battentif\b/gi,'attentive').replace(/\bdiscret\b/gi,'discrète').replace(/\binvesti\b/gi,'investie');
+   }
+  }
+  if(i===1 && !/^(En |Le |La |Les |Une |Un |Il |Elle |Depuis |Toutefois|Cependant)/i.test(s))s='En classe, '+s.charAt(0).toLocaleLowerCase('fr')+s.slice(1);
+  if(i===2 && !/^(En |Le |La |Les |Une |Un |Il |Elle |Depuis |Toutefois|Cependant)/i.test(s))s='Enfin, '+s.charAt(0).toLocaleLowerCase('fr')+s.slice(1);
+  return s+'.';
+ });
+ let text=String(opening||'Ensemble satisfaisant')+'.';
+ if(sentences.length)text+=' '+sentences.join(' ');
+ else text+=' Le travail doit être poursuivi avec régularité.';
+ return text.trim();
 }
 
 function buildAppreciation(s,variant=0){
