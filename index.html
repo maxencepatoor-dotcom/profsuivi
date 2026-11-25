@@ -192,10 +192,25 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
 @media(min-width:700px){main{padding:22px 20px 30px}.panel{padding:20px}.home-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
+
+/* V10.0.3 — bilan collectif et sections repliables */
+.class-report-output{width:100%;min-height:190px;line-height:1.55;font-size:14px}
+.report-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.report-metric{background:#f5f7fc;border:1px solid #e5eaf4;border-radius:13px;padding:10px;min-width:0}
+.report-metric strong{display:block;font-size:20px;color:#1d3472}
+.report-metric span{display:block;font-size:10px;color:#64748b}
+.workspace-group{border:1px solid #e5eaf4;border-radius:17px;background:#fff;margin:0 0 12px;overflow:hidden;box-shadow:0 4px 14px rgba(37,58,112,.035)}
+.workspace-group>summary{cursor:pointer;list-style:none;padding:14px 15px;font-weight:800;color:#263653;display:flex;align-items:center;justify-content:space-between}
+.workspace-group>summary::-webkit-details-marker{display:none}
+.workspace-group>summary:after{content:'＋';font-size:17px;color:#64748b}
+.workspace-group[open]>summary:after{content:'−'}
+.workspace-group>.panel{border:0;border-top:1px solid #edf0f6;border-radius:0;box-shadow:none;margin:0}
+@media(max-width:390px){.report-metrics{gap:6px}.report-metric{padding:8px}.report-metric strong{font-size:18px}}
+
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.2</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.3</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -687,8 +702,25 @@ function setupClassWorkspace(){
  const addBtn=session.querySelector('button[onclick="addStudent()"]');
  if(addBtn){addBtn.classList.add('workspace-add');panes.students.appendChild(addBtn)}
  move(average,panes.students);move(studentList,panes.students);
- move(dashboard,panes.reports);move(repere,panes.reports);move(v69,panes.reports);move(bulletin,panes.reports);move(mail,panes.reports);
+ move(dashboard,panes.reports);move(repere,panes.reports);move(v69,panes.reports);
+ // Bilan collectif généré à partir des moyennes et des critères déjà renseignés.
+ const report=document.createElement('section');report.className='panel';report.id='classReportPanel';
+ report.innerHTML=`<h2>Bilan de la classe</h2><p class="muted">Synthèse automatique du trimestre : résultats disponibles et tendances issues des appréciations individuelles.</p>
+ <label>Trimestre du bilan</label><select id="classReportQuarter"><option value="T1">Trimestre 1</option><option value="T2">Trimestre 2</option><option value="T3">Trimestre 3</option></select>
+ <div id="classReportMetrics"></div><button class="primary" style="width:100%;margin:8px 0" onclick="generateClassReport()">Générer le bilan de la classe</button>
+ <textarea id="classReportText" class="class-report-output" placeholder="Le bilan généré apparaîtra ici. Tu pourras le modifier avant de le copier."></textarea>
+ <div class="row" style="margin-top:8px"><button class="small primary" onclick="copyClassReport()">Copier le bilan</button></div>`;
+ panes.reports.appendChild(report);
+ move(bulletin,panes.reports);move(mail,panes.reports);
+ // Les outils détaillés restent accessibles sans encombrer l'écran principal.
+ const wrap=(el,title,open=false)=>{if(!el||el.dataset.grouped)return;const d=document.createElement('details');d.className='workspace-group';if(open)d.open=true;const summary=document.createElement('summary');summary.textContent=title;d.appendChild(summary);el.parentNode.insertBefore(d,el);d.appendChild(el);el.dataset.grouped='1'};
+ wrap(bulletin,'Préparer les appréciations individuelles');
+ wrap(mail,'Exporter et partager les documents');
  move(trombi,panes.imports);move(photo,panes.imports);move(pronote,panes.imports);
+ wrap(trombi,'Trombinoscope');
+ wrap(photo,'Importer les notes depuis une photo');
+ wrap(pronote,'Importer les notes Pronote');
+ wrap(v69,'Outils complémentaires');
  nav.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>setClassWorkspaceTab(b.dataset.tab)));
  root.dataset.workspaceReady='1';setClassWorkspaceTab(classWorkspaceTab,false);
 }
@@ -700,7 +732,7 @@ function setClassWorkspaceTab(tab,scroll=true){
 }
 function renderRoster(){setupClassWorkspace();let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;renderPortraits();document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';let stats={present:0,events:0,graded:0};c.students.forEach(s=>{stats.events+=s.events.length;if(s.events.some(e=>e.type==='Présent'&&e.date===d.value&&e.session===Number(document.getElementById('sessionNo').value)))stats.present++;if(sessionAverage(s).count)stats.graded++});document.getElementById('classStats').innerHTML=`<div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.present}</b><span>Présents notés</span></div><div class="statbox"><b>${stats.graded}</b><span>Avec participation</span></div>`;
  let averages=c.students.map(s=>sessionAverage(s).avg).filter(x=>x!==null);let classAvg=averages.length?averages.reduce((a,b)=>a+b,0)/averages.length:null;document.getElementById('classAverage').textContent=classAvg===null?'Aucune note de participation enregistrée pour le moment.':`Moyenne de classe : ${classAvg.toFixed(2).replace('.',',')} / 4 · ${averages.length} élève(s) évalué(s)`;
- renderV69Tools();renderPedagogyDashboard();
+ renderV69Tools();renderPedagogyDashboard();const reportQ=document.getElementById('classReportQuarter');if(reportQ)reportQ.value=document.getElementById('bulletinQuarter')?.value||'T1';
  if(!c.students.length){list.innerHTML='<div class="panel empty">Aucun élève. Ajoute-les manuellement ou importe un CSV Pronote.</div>';return}
  c.students.sort((a,b)=>a.name.localeCompare(b.name,'fr')).forEach(s=>{let count=s.events.length,avg=sessionAverage(s).avg,q=document.getElementById('rosterAverageQuarter')?.value||'T1',term=quarterGradeData(s,q),previous=quarterPrevious(q),prev=previous?quarterGradeData(s,previous):null,notes=quarterNotesSummary(s,q);let card=document.createElement('div');card.className='student';card.innerHTML=`<div class="studenttop"><div style="display:flex;align-items:flex-start;gap:10px;min-width:0">${s.photo?`<img class="studentavatar" src="${s.photo}" alt="">`:``}<div><div class="studentname">${esc(s.name)}</div><div class="muted">${count} événement(s) · Participation : ${avg===null?'—':avg.toFixed(2).replace('.',',')+'/4'}</div><div style="font-weight:800;color:var(--blue);margin-top:4px">Moyenne ${q} : ${term.avg===null?'—':term.avg.toFixed(2).replace('.',',')+'/20'}</div>${previous?`<div class="muted">Moyenne précédente (${previous}) : ${prev?.avg===null?'—':prev.avg.toFixed(2).replace('.',',')+'/20'}</div>`:''}<div class="muted" style="margin-top:5px;max-width:440px"><b>Notes ${q} :</b> ${notes.length?esc(notes):'Aucune note saisie'}</div></div></div><button class="small">Fiche →</button></div><div class="actions"><button class="softgreen" data-t="Participation +">Participation +</button><button class="softgreen" data-t="Comportement +">Comportement +</button><button class="softred" data-t="Perturbation">Perturbation</button><button data-t="Cahier oublié">Cahier oublié</button><button data-t="Travail non fait">Travail non fait</button><button data-t="Absence">Absence</button></div>`;card.querySelector('.studenttop button').onclick=()=>{currentStudent=s.id;go('student')};card.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>eventAdd(s,b.dataset.t,b.dataset.t));list.appendChild(card)})}
 
@@ -1319,6 +1351,67 @@ function prepareClassBulletins(){
   if(box)box.innerHTML='<p class="notice" role="alert">La préparation des appréciations a rencontré une erreur : '+esc(error?.message||String(error))+'</p>';
  }
 }
+
+function classReportThemeCounts(c,q){
+ const counts={positive:{},negative:{}};
+ const add=(bucket,label)=>counts[bucket][label]=(counts[bucket][label]||0)+1;
+ const behaviorLabels={chatter_light:'quelques bavardages',chatter_intermittent:'des bavardages intempestifs',chatter_repeated:'des bavardages fréquents',chatter_disruptive:'des bavardages perturbateurs',interruptions:'des prises de parole non maîtrisées',interrupts_others:'des interruptions fréquentes',restless:'de l’agitation',respect:'un respect insuffisant des consignes'};
+ const positiveInvolvement=new Set(['very_involved','active','collective']);
+ const negativeInvolvement=new Set(['goodwill_irregular','prompted','lack','passive','gives_up']);
+ const positiveAttention=new Set(['very_attentive','listens','satisfactory']);
+ const negativeAttention=new Set(['fluctuating','distracted','poor_concentration','sustained','instructions']);
+ const positiveWork=new Set(['regular','lessons','homework','quality','autonomy','effort']);
+ const negativeWork=new Set(['irregular','incomplete','insufficient','lessons_weak','revision','support','autonomy_weak','effort_weak']);
+ const positiveWorkLabel={regular:'un travail personnel régulier',lessons:'un apprentissage sérieux des leçons',homework:'des devoirs réalisés avec application',quality:'des productions de qualité',autonomy:'une bonne autonomie',effort:'des efforts pour progresser'};
+ const negativeWorkLabel={irregular:'un travail personnel irrégulier',incomplete:'des devoirs incomplets ou oubliés',insufficient:'un travail personnel insuffisant',lessons_weak:'des leçons insuffisamment apprises',revision:'un manque de régularité dans les révisions',support:'un besoin d’accompagnement',autonomy_weak:'un manque d’autonomie',effort_weak:'des efforts personnels insuffisants'};
+ (c.students||[]).forEach(s=>{
+  const x=s.bulletinCriteria?.[q]||{};
+  if(x.work==='serious'||x.work==='very_good')add('positive','un travail sérieux et de qualité');
+  if(['missing','deepen','superficial','irregular'].includes(x.work))add('negative',x.work==='missing'?'un travail personnel insuffisant':'un travail à approfondir ou à régulariser');
+  if(x.participation==='very_good')add('positive','une participation active et pertinente');
+  if(['insufficient','discrete','irregular'].includes(x.participation))add('negative',x.participation==='discrete'?'une participation orale trop discrète':'une participation à renforcer');
+  if(x.material==='negative')add('negative','des oublis de matériel');
+  (x.behavior||[]).forEach(k=>{if(behaviorLabels[k])add('negative',behaviorLabels[k])});
+  (x.involvement||[]).forEach(k=>{if(positiveInvolvement.has(k))add('positive',k==='collective'?'une implication dans les projets collectifs':'un investissement actif');else if(negativeInvolvement.has(k))add('negative',k==='gives_up'?'un découragement face aux difficultés':'une implication à renforcer')});
+  (x.attention||[]).forEach(k=>{if(positiveAttention.has(k))add('positive','une écoute et une attention satisfaisantes');else if(negativeAttention.has(k))add('negative','une attention ou une concentration à renforcer')});
+  (x.personalWork||[]).forEach(k=>{if(positiveWork.has(k))add('positive',positiveWorkLabel[k]);else if(negativeWork.has(k))add('negative',negativeWorkLabel[k])});
+ });
+ const top=bucket=>Object.entries(bucket).sort((a,b)=>b[1]-a[1]);
+ return {positive:top(counts.positive),negative:top(counts.negative)};
+}
+function generateClassReport(){
+ const c=cls();if(!c)return alert('Ouvre d’abord une classe.');
+ const q=document.getElementById('classReportQuarter')?.value||document.getElementById('bulletinQuarter')?.value||'T1';
+ const all=c.students||[],withAvg=all.map(s=>({s,d:quarterGradeData(s,q)})).filter(x=>x.d.avg!==null);
+ const avg=withAvg.length?withAvg.reduce((n,x)=>n+x.d.avg,0)/withAvg.length:null;
+ const themes=classReportThemeCounts(c,q);
+ const fmt=n=>Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+ const lines=[`Bilan de la classe – ${q}`,``];
+ if(avg===null)lines.push(`Aucune moyenne exploitable n’est renseignée pour ce trimestre (${all.length} élève(s) dans la classe).`);
+ else{
+  lines.push(`La moyenne de classe est de ${fmt(avg)}/20, calculée à partir des moyennes disponibles pour ${withAvg.length} élève(s) sur ${all.length}.`);
+  const excellent=withAvg.filter(x=>x.d.avg>=16).length,good=withAvg.filter(x=>x.d.avg>=12&&x.d.avg<16).length,fragile=withAvg.filter(x=>x.d.avg<10).length;
+  lines.push(`Parmi les élèves évalués, ${excellent} obtiennent au moins 16/20, ${good} se situent entre 12 et 15,99/20 et ${fragile} ont une moyenne inférieure à 10/20.`);
+ }
+ if(themes.positive.length)lines.push(`Les appréciations font notamment ressortir ${themes.positive[0][0]} (${themes.positive[0][1]} élève(s) concerné(s)).`);
+ if(themes.negative.length)lines.push(`Le principal point de vigilance concerne ${themes.negative[0][0]} (${themes.negative[0][1]} élève(s) concerné(s)).`);
+ if(!themes.positive.length&&!themes.negative.length)lines.push(`Les critères d’appréciation collectifs sont encore peu renseignés : le bilan qualitatif reste à compléter.`);
+ if(avg!==null){
+  if(avg>=14)lines.push(`Dans l’ensemble, les résultats sont solides. Il convient de maintenir cette dynamique et de poursuivre le travail engagé.`);
+  else if(avg>=10)lines.push(`Les résultats sont globalement intermédiaires. La régularité du travail et l’implication de chacun permettront de consolider les acquis.`);
+  else lines.push(`Les résultats restent fragiles. Un travail plus régulier et un accompagnement ciblé seront nécessaires pour faire progresser le groupe.`);
+ }
+ const text=lines.join('\n');
+ const area=document.getElementById('classReportText');if(area)area.value=text;
+ const metrics=document.getElementById('classReportMetrics');
+ if(metrics)metrics.innerHTML=`<div class="report-metrics"><div class="report-metric"><strong>${avg===null?'—':fmt(avg)+'/20'}</strong><span>Moyenne de classe</span></div><div class="report-metric"><strong>${withAvg.length}/${all.length}</strong><span>Élèves avec moyenne</span></div><div class="report-metric"><strong>${themes.positive.length+themes.negative.length}</strong><span>Tendances relevées</span></div></div>`;
+}
+async function copyClassReport(){
+ const area=document.getElementById('classReportText'),value=String(area?.value||'').trim();if(!value)return alert('Génère d’abord le bilan de la classe.');
+ try{if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(value);else{area.focus();area.select();if(!document.execCommand('copy'))throw new Error('copy failed')}alert('Bilan copié.');}
+ catch(e){alert('La copie a échoué. Sélectionne le texte pour le copier manuellement.')}
+}
+
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
  const opts=(v,pos,neg)=>`<option value="neutral" ${v==='neutral'?'selected':''}>À définir</option><option value="positive" ${v==='positive'?'selected':''}>${pos}</option><option value="negative" ${v==='negative'?'selected':''}>${neg}</option>`;
