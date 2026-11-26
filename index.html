@@ -683,13 +683,28 @@ function renderClasses(){
   let d=document.createElement('div');d.className='class-card';
   d.innerHTML=`<div class="class-card-head"><div><div class="class-card-title">${esc(c.name)}</div><div class="muted">${esc(c.establishment||'Établissement non précisé')} · ${c.students.length} élève(s)</div></div><span class="pill">${portraits} photo(s)</span></div>
   <div class="class-metrics"><span class="class-metric">👥 ${c.students.length} élèves</span><span class="class-metric">📷 ${portraits} portraits</span></div>
-  <div class="class-actions"><button class="primary" data-open>Ouvrir la classe</button><button data-rename>Renommer</button><button class="softred" data-delete>Supprimer</button></div>`;
+  <div class="class-actions"><button class="primary" data-open>Ouvrir la classe</button><button data-rename>Renommer</button><button data-establishment>Établissement</button><button class="softred" data-delete>Supprimer</button></div>`;
   d.querySelector('[data-open]').onclick=()=>{currentClass=c.id;applyTermMode();go('roster')};
   d.querySelector('[data-rename]').onclick=()=>renameClass(c.id);
+  d.querySelector('[data-establishment]').onclick=()=>changeClassEstablishment(c.id);
   d.querySelector('[data-delete]').onclick=()=>deleteClass(c.id);
   el.appendChild(d)
  });
  let sel=document.getElementById('importClass'),prev=sel.value;sel.innerHTML=db.classes.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(db.classes.some(c=>c.id===prev))sel.value=prev;
+}
+function changeClassEstablishment(classId){
+ const c=db.classes.find(x=>x.id===classId);if(!c)return;
+ const current=c.establishment||'Établissement non précisé';
+ const value=prompt('Nouvel établissement pour la classe '+c.name+'.\\nLes élèves, notes, photos et observations seront conservés.',current);
+ if(value===null)return;
+ const school=value.trim();if(!school)return alert('Le nom de l’établissement ne peut pas être vide.');
+ const duplicate=db.classes.some(x=>x.id!==classId&&x.name.toLocaleLowerCase('fr')===c.name.toLocaleLowerCase('fr')&&(x.establishment||'Établissement non précisé')===school);
+ if(duplicate)return alert('Une classe portant ce nom existe déjà dans cet établissement.');
+ db.establishments=db.establishments||[];
+ if(!db.establishments.includes(school))db.establishments.push(school);
+ c.establishment=school;
+ save();renderClasses();
+ alert('Établissement de '+c.name+' mis à jour. Les données de la classe ont été conservées.');
 }
 function addStudent(){let n=prompt('Nom et prénom de l’élève');if(!n?.trim())return;cls().students.push({id:uid(),name:n.trim(),events:[],grades:[],sessions:{},notes:[]});save();renderRoster()}
 function eventAdd(s,type,label){s.events.push({id:uid(),type,label,date:document.getElementById('sessionDate').value||new Date().toISOString().slice(0,10),session:Number(document.getElementById('sessionNo').value)});save();renderRoster()}
