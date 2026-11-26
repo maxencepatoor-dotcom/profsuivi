@@ -263,13 +263,14 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
  </div>
  <div class="panel">
   <div class="row between"><div><h2>Mes classes</h2><div class="muted" id="classSummary"></div></div><button class="primary small" onclick="toggleAddClass()">+ Ajouter</button></div>
-  <div id="addClassForm" class="class-add-form hidden"><input id="newClassName" placeholder="Ex. 5e A" maxlength="40"><button class="primary" onclick="createClassFromForm()">Créer</button></div>
+  <div id="addClassForm" class="class-add-form hidden"><input id="newClassName" placeholder="Ex. 5e A" maxlength="40"><input id="newClassSchool" placeholder="Établissement (ex. Collège X)" maxlength="80"><button class="primary" onclick="createClassFromForm()">Créer</button></div>
   <div class="class-toolbar">
    <input id="classSearch" class="class-search" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Rechercher une classe…" oninput="renderClasses()">
    <select id="classSort" aria-label="Trier les classes" onchange="renderClasses()"><option value="name">Ordre alphabétique</option><option value="count">Plus d'élèves</option><option value="recent">Dernière créée</option></select>
    <button class="small" onclick="clearClassSearch()">Réinitialiser</button>
   </div>
   <div id="classList"></div>
+  <details class="import-details"><summary>Organisation de l’année scolaire</summary><label>Découpage de l’année</label><select id="termMode" onchange="setTermMode(this.value)"><option value="trimester">3 trimestres</option><option value="semester">2 semestres</option></select><p class="muted">Le changement adapte les périodes proposées dans les notes, évaluations orales, compétences et bulletins. Les données déjà enregistrées sont conservées.</p></details>
   <details class="import-details">
    <summary>Importer une liste Pronote (CSV)</summary>
    <p class="muted">Si ton fichier contient une colonne Classe/Division, les élèves seront répartis dans les classes correspondantes. Sinon, ils seront ajoutés à la classe choisie. Pour Excel (.xlsx), exporte d'abord en CSV.</p>
@@ -453,7 +454,7 @@ const PEDAGOGICAL_LIBRARY = {"nom":"Bibliothèque documentaire enrichie – Édu
 
 const KEY='profsuivi_solo_v4';
 let db=load(), currentClass=null, currentStudent=null, page='home';
-db.planningSchedules=db.planningSchedules||[];db.planningLessons=db.planningLessons||[];db.planningSlots=db.planningSlots||[];db.schoolZone=db.schoolZone||'B';db.schoolYear=db.schoolYear||'2026-2027';
+db.planningSchedules=db.planningSchedules||[];db.planningLessons=db.planningLessons||[];db.planningSlots=db.planningSlots||[];db.schoolZone=db.schoolZone||'B';db.schoolYear=db.schoolYear||'2026-2027';db.establishments=db.establishments||[];db.termMode=db.termMode||'trimester';
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{classes:[]}}catch(e){return {classes:[]}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -653,14 +654,18 @@ function go(p){page=p;['home','classes','roster','student','settings','sequence'
 function renderHome(){const classes=(db.classes||[]),students=classes.reduce((n,c)=>n+(c.students||[]).length,0);const a=document.getElementById('homeClassCount'),b=document.getElementById('homeStudentCount'),c=document.getElementById('homeSequenceCount');if(a)a.textContent=classes.length;if(b)b.textContent=students;if(c)c.textContent=(db.sequenceLibrary||[]).length;filterHomeActions(document.getElementById('homeSearch')?.value||'')}
 function filterHomeActions(q){const query=String(q||'').trim().toLocaleLowerCase('fr');document.querySelectorAll('#homeActionGrid [data-search]').forEach(el=>{el.style.display=!query||el.dataset.search.toLocaleLowerCase('fr').includes(query)||el.innerText.toLocaleLowerCase('fr').includes(query)?'':'none'});}
 function toggleAddClass(){let f=document.getElementById('addClassForm');f.classList.toggle('hidden');if(!f.classList.contains('hidden'))document.getElementById('newClassName').focus()}
-function createClassFromForm(){let input=document.getElementById('newClassName'),n=input.value.trim();if(!n)return alert('Saisis le nom de la classe.');if(db.classes.some(c=>c.name.toLowerCase()===n.toLowerCase()))return alert('Cette classe existe déjà.');db.classes.push({id:uid(),name:n,students:[]});save();input.value='';document.getElementById('addClassForm').classList.add('hidden');renderClasses()}
+function createClassFromForm(){let input=document.getElementById('newClassName'),n=input.value.trim(),school=document.getElementById('newClassSchool')?.value.trim()||'Établissement non précisé';if(!n)return alert('Saisis le nom de la classe.');if(db.classes.some(c=>c.name.toLowerCase()===n.toLowerCase()&&(c.establishment||'Établissement non précisé')===school))return alert('Cette classe existe déjà dans cet établissement.');db.establishments=db.establishments||[];if(!db.establishments.includes(school))db.establishments.push(school);db.classes.push({id:uid(),name:n,establishment:school,students:[]});save();input.value='';document.getElementById('newClassSchool').value='';document.getElementById('addClassForm').classList.add('hidden');renderClasses()}
+function setTermMode(mode){db.termMode=mode==='semester'?'semester':'trimester';save();applyTermMode();alert('Découpage enregistré : '+(db.termMode==='semester'?'2 semestres':'3 trimestres')+'. Les anciennes évaluations restent conservées dans leur période d’origine.')}
+function termKeys(){return db.termMode==='semester'?['S1','S2']:['T1','T2','T3']}
+function termLabel(q){return db.termMode==='semester'?({S1:'Semestre 1',S2:'Semestre 2'}[q]||q):({T1:'Trimestre 1',T2:'Trimestre 2',T3:'Trimestre 3'}[q]||q)}
+function applyTermMode(){document.querySelectorAll('select').forEach(sel=>{let vals=[...sel.options].map(o=>o.value);if(!(['T1','T2','T3'].every(x=>vals.includes(x))))return;let keep=sel.value;sel.innerHTML=termKeys().map((q,i)=>`<option value="${q}">${termLabel(q)}</option>`).join('');sel.value=termKeys().includes(keep)?keep:termKeys()[0]});const m=document.getElementById('termMode');if(m)m.value=db.termMode||'trimester'}
 function newClass(){toggleAddClass()}
 function renameClass(id){let c=db.classes.find(x=>x.id===id);if(!c)return;let n=prompt('Nouveau nom de la classe :',c.name);if(!n?.trim())return;if(db.classes.some(x=>x.id!==id&&x.name.toLowerCase()===n.trim().toLowerCase()))return alert('Une classe porte déjà ce nom.');c.name=n.trim();save();renderClasses()}
 function clearClassSearch(){document.getElementById('classSearch').value='';renderClasses()}
 function deleteClass(id){let c=db.classes.find(x=>x.id===id);if(!c)return;if(!confirm(`Supprimer la classe « ${c.name} » et toutes ses données : ${c.students.length} élève(s), photos, notes, événements et observations ?`))return;if(!confirm(`Confirmer définitivement la suppression de « ${c.name} » ? Pense à faire une sauvegarde avant.`))return;db.classes=db.classes.filter(x=>x.id!==id);if(currentClass===id)currentClass=null;save();renderClasses();alert(`La classe « ${c.name} » a été supprimée.`)}
 function renderClasses(){
  const el=document.getElementById('classList'),q=(document.getElementById('classSearch')?.value||'').trim().toLowerCase(),sort=document.getElementById('classSort')?.value||'name';
- let arr=db.classes.filter(c=>c.name.toLowerCase().includes(q));
+ let arr=db.classes.filter(c=>(c.name+' '+(c.establishment||'')).toLowerCase().includes(q));
  if(sort==='count')arr.sort((a,b)=>b.students.length-a.students.length||a.name.localeCompare(b.name,'fr'));
  else if(sort==='recent')arr=arr.slice().reverse();
  else arr.sort((a,b)=>a.name.localeCompare(b.name,'fr'));
@@ -672,7 +677,7 @@ function renderClasses(){
  arr.forEach(c=>{
   let portraits=c.students.filter(s=>s.photo).length;
   let d=document.createElement('div');d.className='class-card';
-  d.innerHTML=`<div class="class-card-head"><div><div class="class-card-title">${esc(c.name)}</div><div class="muted">${c.students.length} élève(s)</div></div><span class="pill">${portraits} photo(s)</span></div>
+  d.innerHTML=`<div class="class-card-head"><div><div class="class-card-title">${esc(c.name)}</div><div class="muted">${esc(c.establishment||'Établissement non précisé')} · ${c.students.length} élève(s)</div></div><span class="pill">${portraits} photo(s)</span></div>
   <div class="class-metrics"><span class="class-metric">👥 ${c.students.length} élèves</span><span class="class-metric">📷 ${portraits} portraits</span></div>
   <div class="class-actions"><button class="primary" data-open>Ouvrir la classe</button><button data-rename>Renommer</button><button class="softred" data-delete>Supprimer</button></div>`;
   d.querySelector('[data-open]').onclick=()=>{currentClass=c.id;go('roster')};
@@ -1133,20 +1138,28 @@ function saveAutoTrombi(){
  save();renderRoster();document.getElementById('autoTrombiStatus').textContent=`${saved} portrait(s) enregistré(s). Les élèves non associés restent sans photo.`;document.getElementById('autoTrombiSave').classList.add('hidden');document.getElementById('autoTrombiPreview').innerHTML='';autoTrombiPending=[];
 }
 
-function quarterPrevious(q){return q==='T2'?'T1':q==='T3'?'T2':null}
+function quarterPrevious(q){return q==='T2'?'T1':q==='T3'?'T2':q==='S2'?'S1':null}
 function quarterNotes(s,q){return (s.grades||[]).filter(g=>g.quarter===q&&g.value!==null&&g.value!==''&&Number.isFinite(Number(g.value)))}
 function quarterNotesSummary(s,q){return quarterNotes(s,q).map(g=>`${g.title||'Note'} : ${Number(g.value).toLocaleString('fr-FR',{maximumFractionDigits:2})}/20${Number(g.coefficient)>1?` (coef. ${g.coefficient})`:''}`).join(' · ')}
 function quarterGradeData(s,q){
  const numeric=quarterNotes(s,q);
- // Les notes détaillées fournies par l'enseignant priment : moyenne pondérée par les coefficients.
- if(numeric.length){
-  const total=numeric.reduce((a,g)=>a+Number(g.value)*(Number(g.coefficient)>0?Number(g.coefficient):1),0);
-  const coeff=numeric.reduce((a,g)=>a+(Number(g.coefficient)>0?Number(g.coefficient):1),0);
-  return {avg:total/coeff,source:'calculée à partir des notes',count:numeric.length,weighted:numeric.some(g=>Number(g.coefficient)>0&&Number(g.coefficient)!==1)};
+ const oral=(cls()?.oralAssessments||[]).filter(x=>x.studentId===s.id&&x.quarter===q&&Number.isFinite(Number(x.score)));
+ const entries=numeric.map(g=>({value:Number(g.value),coefficient:Number(g.coefficient)>0?Number(g.coefficient):1}));
+ // Chaque interrogation orale sur 5 est convertie sur 20 et compte comme une note de coefficient 1.
+ oral.forEach(x=>entries.push({value:Number(x.score)*4,coefficient:1}));
+ if(entries.length){
+  const total=entries.reduce((a,g)=>a+g.value*g.coefficient,0);
+  const coeff=entries.reduce((a,g)=>a+g.coefficient,0);
+  return {avg:total/coeff,source:oral.length?'notes de classe et évaluations orales':'calculée à partir des notes',count:entries.length,oralCount:oral.length,weighted:entries.some(g=>g.coefficient!==1)};
  }
  const imported=s.pronoteAverages?.[q];
- if(imported&&Number.isFinite(Number(imported.value)))return {avg:Number(imported.value),source:'Pronote (moyenne importée)',count:0,weighted:false};
- return {avg:null,source:'',count:0,weighted:false};
+ if(imported&&Number.isFinite(Number(imported.value)))return {avg:Number(imported.value),source:'Pronote (moyenne importée)',count:0,oralCount:0,weighted:false};
+ return {avg:null,source:'',count:0,oralCount:0,weighted:false};
+}
+function sessionBulletinSummary(s){
+ const totals={material:0,participation:0,chatter:0,behavior:0},sessions=Object.values(s.sessionManagement||{});
+ sessions.forEach(v=>Object.keys(totals).forEach(k=>{if(v&&v[k])totals[k]++}));
+ return {totals,count:sessions.length};
 }
 function bulletinData(s){
  const q=document.getElementById('bulletinQuarter')?.value||'T1';
@@ -1448,7 +1461,7 @@ async function copyClassReport(){
 function renderBulletinEditor(){
  const box=document.getElementById('bulletinEditor');if(!bulletinDrafts.length){box.innerHTML='<p class="muted">Aucune appréciation préparée pour le moment.</p>';return}
  const opts=(v,pos,neg)=>`<option value="neutral" ${v==='neutral'?'selected':''}>À définir</option><option value="positive" ${v==='positive'?'selected':''}>${pos}</option><option value="negative" ${v==='negative'?'selected':''}>${neg}</option>`;
- box.innerHTML=bulletinDrafts.map((b,i)=>{const student=cls().students.find(x=>x.id===b.id);return `<div class="bulletin-card"><div class="bulletin-student-head">${student?.photo?`<img class="bulletin-student-photo" src="${student.photo}" alt="Photo de ${esc(b.name)}">`:`<div class="bulletin-student-photo" aria-label="Photo non disponible"></div>`}<div style="flex:1"><b>${esc(b.name)}</b><div class="muted">${student?.photo?`Photo de l’élève`:`Aucune photo enregistrée`}</div></div><div style="text-align:right;min-width:92px"><div class="muted">Moyenne ${b.quarter}</div><strong style="font-size:19px">${(()=>{const a=student?quarterGradeData(student,b.quarter).avg:null;return a===null?'—':a.toFixed(2).replace('.',',')+'/20'})()}</strong><div class="muted" style="font-size:10px">${(()=>{const a=student?quarterGradeData(student,b.quarter):null;return a?.source||'Non renseignée'})()}</div>${(()=>{const p=quarterPrevious(b.quarter),a=student&&p?quarterGradeData(student,p):null;return p?`<div class="muted" style="font-size:10px">${p} : ${a?.avg===null?'—':a?.avg?.toFixed(2).replace('.',',')+'/20'}</div>`:''})()}</div></div><div class="muted" style="margin:4px 0 8px"><b>Notes ${b.quarter} :</b> ${student&&quarterNotesSummary(student,b.quarter)?esc(quarterNotesSummary(student,b.quarter)):'Aucune note saisie pour ce trimestre'}</div><div class="grid" style="margin-top:8px">
+ box.innerHTML=bulletinDrafts.map((b,i)=>{const student=cls().students.find(x=>x.id===b.id);return `<div class="bulletin-card"><div class="bulletin-student-head">${student?.photo?`<img class="bulletin-student-photo" src="${student.photo}" alt="Photo de ${esc(b.name)}">`:`<div class="bulletin-student-photo" aria-label="Photo non disponible"></div>`}<div style="flex:1"><b>${esc(b.name)}</b><div class="muted">${student?.photo?`Photo de l’élève`:`Aucune photo enregistrée`}</div></div><div style="text-align:right;min-width:92px"><div class="muted">Moyenne ${b.quarter}</div><strong style="font-size:19px">${(()=>{const a=student?quarterGradeData(student,b.quarter).avg:null;return a===null?'—':a.toFixed(2).replace('.',',')+'/20'})()}</strong><div class="muted" style="font-size:10px">${(()=>{const a=student?quarterGradeData(student,b.quarter):null;return a?.source||'Non renseignée'})()}</div>${(()=>{const p=quarterPrevious(b.quarter),a=student&&p?quarterGradeData(student,p):null;return p?`<div class="muted" style="font-size:10px">${p} : ${a?.avg===null?'—':a?.avg?.toFixed(2).replace('.',',')+'/20'}</div>`:''})()}</div></div><div class="muted" style="margin:4px 0 8px"><b>Notes ${b.quarter} :</b> ${student&&quarterNotesSummary(student,b.quarter)?esc(quarterNotesSummary(student,b.quarter)):'Aucune note classique saisie'}${student&&oralAssessmentsForQuarter(cls(),b.quarter).some(x=>x.studentId===student.id)?' · Oral : '+oralAssessmentsForQuarter(cls(),b.quarter).filter(x=>x.studentId===student.id).map(x=>x.score+'/5').join(', '):''}</div>${student?(()=>{const z=sessionBulletinSummary(student),t=z.totals;return `<div class="muted" style="margin:4px 0 10px;padding:8px;background:#f8fafc;border-radius:9px"><b>Observations de séance enregistrées (${z.count} séance(s), toutes périodes confondues) :</b> Matériel : ${t.material} · Participation : ${t.participation} · Bavardages : ${t.chatter} · Comportement : ${t.behavior}</div>`})():''}<div class="grid" style="margin-top:8px">
  <div><label>Travail</label><select data-crit="work" data-index="${i}"><option value="neutral" ${b.criteria.work==='neutral'?'selected':''}>À définir</option><option value="missing" ${b.criteria.work==='missing'?'selected':''}>Manque de travail personnel</option><option value="serious" ${b.criteria.work==='serious'?'selected':''}>Élève sérieux</option><option value="very_good" ${b.criteria.work==='very_good'?'selected':''}>Très bon travail</option><option value="deepen" ${b.criteria.work==='deepen'?'selected':''}>Travail à approfondir</option><option value="superficial" ${b.criteria.work==='superficial'?'selected':''}>Travail superficiel</option><option value="irregular" ${b.criteria.work==='irregular'?'selected':''}>Travail irrégulier</option></select></div>
  <div><label>Participation</label><select data-crit="participation" data-index="${i}"><option value="neutral" ${b.criteria.participation==='neutral'?'selected':''}>À définir</option><option value="insufficient" ${b.criteria.participation==='insufficient'?'selected':''}>Participation insuffisante</option><option value="discrete" ${b.criteria.participation==='discrete'?'selected':''}>Élève trop discret à l’oral</option><option value="very_good" ${b.criteria.participation==='very_good'?'selected':''}>Très bonne participation</option><option value="irregular" ${b.criteria.participation==='irregular'?'selected':''}>Participation irrégulière</option></select></div>
  <div><label>Matériel</label><select data-crit="material" data-index="${i}"><option value="neutral" ${b.criteria.material==='neutral'?'selected':''}>À définir</option><option value="negative" ${b.criteria.material==='negative'?'selected':''}>Oublis de matériel répétés</option></select></div>
@@ -1941,6 +1954,7 @@ function restoreClassListIfHidden(){
  const input=document.getElementById('classSearch');
  if(input){ input.value=''; input.setAttribute('autocomplete','off'); }
  restoreClassListIfHidden();
+ applyTermMode();
  decorateDashboard();
  go('home');
  window.addEventListener('pageshow',()=>{
