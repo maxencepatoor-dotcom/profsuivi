@@ -207,10 +207,23 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
 .workspace-group>.panel{border:0;border-top:1px solid #edf0f6;border-radius:0;box-shadow:none;margin:0}
 @media(max-width:390px){.report-metrics{gap:6px}.report-metric{padding:8px}.report-metric strong{font-size:18px}}
 
+
+/* V10.0.6 — suivi rapide pendant la séance */
+.session-live-list{display:grid;gap:8px;margin-top:10px}
+.session-live-row{border:1px solid var(--line);border-radius:13px;padding:10px;background:#fff}
+.session-live-name{font-weight:800;margin-bottom:8px}
+.session-live-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.session-live-actions button{font-size:11px;line-height:1.2;padding:9px 4px;min-height:42px;white-space:normal}
+.session-live-actions button.is-on{background:#dbeafe;border-color:#60a5fa;color:#1e3a8a;font-weight:800}
+.session-live-actions button.is-alert{background:#fee2e2;border-color:#fca5a5;color:#991b1b;font-weight:800}
+.oral-draw-box{border:1px solid #c7d2fe;background:#f8faff;border-radius:15px;padding:13px;margin-top:12px}
+.oral-draw-name{font-size:20px;font-weight:850;margin:9px 0;color:var(--ink)}
+@media(max-width:420px){.session-live-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.session-live-actions button{font-size:12px}}
+
 </style>
 </head>
 <body>
-<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.3</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
+<header><div class="headrow"><div class="brandlock"><div class="brandmark"><svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M6.5 10.5v5c3.5 2.8 7.5 2.8 11 0v-5M21 9v6"/><path d="M9 13.5v3.2M12 14v3.4M15 13.5v3.2"/></svg></div><div><div class="brandtitle">ProfSuivi <span style="font-weight:450">Solo</span></div><div class="brandmeta"><small>Suivi de classe · stockage sur cet iPhone</small><span class="version-tag" id="appVersion">V10.0.6</span></div></div></div><span class="pill" style="background:#dbeafe;color:#1e3a8a;white-space:nowrap">● Hors ligne</span></div></header>
 <main>
 <section id="homeView">
  <div class="home-hero">
@@ -276,6 +289,20 @@ table{border-collapse:separate;border-spacing:0;font-size:13px}th{font-size:11px
   </div>
   <div class="row" style="margin-top:10px"><button class="small" onclick="setAllPresent()">Tous présents</button><button class="small" onclick="classParticipation()">Note collective /4</button><button class="small" onclick="addStudent()">+ Élève</button></div>
   <div class="statsgrid" id="classStats"></div>
+  <div class="panel" style="margin-top:12px;background:#f8fafc">
+   <h3 style="margin:0 0 5px">Suivi rapide pendant la séance</h3>
+   <p class="muted">Un toucher pour enregistrer ou retirer une observation. Les données sont conservées pour cette date et cette séance.</p>
+   <div id="sessionLiveList" class="session-live-list"></div>
+  </div>
+  <div class="oral-draw-box">
+   <h3 style="margin:0 0 5px">Interrogation orale au hasard</h3>
+   <p class="muted">Tire un élève qui n’a pas encore été évalué avec cet outil pendant le trimestre sélectionné.</p>
+   <div class="grid"><div><label>Trimestre</label><select id="oralQuarter"><option value="T1">T1</option><option value="T2">T2</option><option value="T3">T3</option></select></div><div><label>Note sur 5</label><select id="oralScore"><option value="">À noter…</option><option value="0">0 / 5</option><option value="1">1 / 5</option><option value="2">2 / 5</option><option value="3">3 / 5</option><option value="4">4 / 5</option><option value="5">5 / 5</option></select></div></div>
+   <button class="primary" style="width:100%;margin-top:9px" onclick="drawRandomOralStudent()">Choisir un élève au hasard</button>
+   <div id="oralDrawResult" aria-live="polite" class="muted" style="margin-top:8px">Aucun élève tiré pour le moment.</div>
+   <button id="saveOralScoreBtn" class="primary hidden" style="width:100%;margin-top:8px" onclick="saveOralAssessment()">Enregistrer la note orale</button>
+   <div id="oralQuarterStatus" class="muted" style="margin-top:8px"></div><div id="oralQuarterHistory" style="margin-top:6px"></div>
+  </div>
  </div>
  <div class="panel" id="pedagogyDashboard">
   <div class="row between"><h2>Tableau de bord pédagogique</h2><span class="pill">V7.6</span></div>
@@ -705,10 +732,10 @@ function setupClassWorkspace(){
  move(dashboard,panes.reports);move(repere,panes.reports);move(v69,panes.reports);
  // Bilan collectif généré à partir des moyennes et des critères déjà renseignés.
  const report=document.createElement('section');report.className='panel';report.id='classReportPanel';
- report.innerHTML=`<h2>Bilan de la classe</h2><p class="muted">Synthèse automatique du trimestre : résultats disponibles et tendances issues des appréciations individuelles.</p>
+ report.innerHTML=`<h2>Bilan de la classe</h2><p class="muted">Une ou deux phrases très synthétiques, à partir des appréciations individuelles.</p>
  <label>Trimestre du bilan</label><select id="classReportQuarter"><option value="T1">Trimestre 1</option><option value="T2">Trimestre 2</option><option value="T3">Trimestre 3</option></select>
  <div id="classReportMetrics"></div><button class="primary" style="width:100%;margin:8px 0" onclick="generateClassReport()">Générer le bilan de la classe</button>
- <textarea id="classReportText" class="class-report-output" placeholder="Le bilan généré apparaîtra ici. Tu pourras le modifier avant de le copier."></textarea>
+ <textarea id="classReportText" class="class-report-output" placeholder="Le bilan très synthétique apparaîtra ici (une ou deux phrases). Tu pourras le modifier avant de le copier."></textarea>
  <div class="row" style="margin-top:8px"><button class="small primary" onclick="copyClassReport()">Copier le bilan</button></div>`;
  panes.reports.appendChild(report);
  move(bulletin,panes.reports);move(mail,panes.reports);
@@ -730,7 +757,7 @@ function setClassWorkspaceTab(tab,scroll=true){
  document.querySelectorAll('#rosterView .workspace-pane').forEach(p=>p.classList.toggle('active',p.id==='workspace-'+tab));
  if(scroll)document.getElementById('rosterView')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
-function renderRoster(){setupClassWorkspace();let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;renderPortraits();document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';let stats={present:0,events:0,graded:0};c.students.forEach(s=>{stats.events+=s.events.length;if(s.events.some(e=>e.type==='Présent'&&e.date===d.value&&e.session===Number(document.getElementById('sessionNo').value)))stats.present++;if(sessionAverage(s).count)stats.graded++});document.getElementById('classStats').innerHTML=`<div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.present}</b><span>Présents notés</span></div><div class="statbox"><b>${stats.graded}</b><span>Avec participation</span></div>`;
+function renderRoster(){setupClassWorkspace();let c=cls();if(!c){go('classes');return}document.getElementById('rosterClassName').textContent=c.name;renderPortraits();document.getElementById('sessionLabel').textContent='';let d=document.getElementById('sessionDate');if(!d.value)d.value=new Date().toISOString().slice(0,10);let list=document.getElementById('studentList');list.innerHTML='';let stats={present:0,events:0,graded:0};c.students.forEach(s=>{stats.events+=s.events.length;if(s.events.some(e=>e.type==='Présent'&&e.date===d.value&&e.session===Number(document.getElementById('sessionNo').value)))stats.present++;if(sessionAverage(s).count)stats.graded++});document.getElementById('classStats').innerHTML=`<div class="statbox"><b>${c.students.length}</b><span>Élèves</span></div><div class="statbox"><b>${stats.present}</b><span>Présents notés</span></div><div class="statbox"><b>${stats.graded}</b><span>Avec participation</span></div>`;renderSessionManagement();renderOralQuarterStatus();
  let averages=c.students.map(s=>sessionAverage(s).avg).filter(x=>x!==null);let classAvg=averages.length?averages.reduce((a,b)=>a+b,0)/averages.length:null;document.getElementById('classAverage').textContent=classAvg===null?'Aucune note de participation enregistrée pour le moment.':`Moyenne de classe : ${classAvg.toFixed(2).replace('.',',')} / 4 · ${averages.length} élève(s) évalué(s)`;
  renderV69Tools();renderPedagogyDashboard();const reportQ=document.getElementById('classReportQuarter');if(reportQ)reportQ.value=document.getElementById('bulletinQuarter')?.value||'T1';
  if(!c.students.length){list.innerHTML='<div class="panel empty">Aucun élève. Ajoute-les manuellement ou importe un CSV Pronote.</div>';return}
@@ -772,6 +799,15 @@ document.getElementById('cropSize')?.addEventListener('input',updateCropPreview)
 initTrombi();renderPortraits();
 function setAllPresent(){let c=cls();c.students.forEach(s=>{let exists=s.events.some(e=>e.type==='Présent'&&e.date===document.getElementById('sessionDate').value&&e.session===Number(document.getElementById('sessionNo').value));if(!exists)s.events.push({id:uid(),type:'Présent',label:'Présent',date:document.getElementById('sessionDate').value,session:Number(document.getElementById('sessionNo').value)})});save();renderRoster()}
 function classParticipation(){let v=prompt('Note collective de participation pour cette séance (sur 4)');if(v===null)return;let n=Number(v);if(!Number.isFinite(n)||n<0||n>4){alert('Entre une note de 0 à 4.');return}let c=cls(),date=document.getElementById('sessionDate').value,no=Number(document.getElementById('sessionNo').value);c.students.forEach(s=>{s.sessions[date+'_'+no]={date,session:no,collective:n,individual:null}});save();alert('Note collective enregistrée. Tu peux modifier chaque élève dans sa fiche.')}
+
+document.getElementById('sessionDate')?.addEventListener('change',renderSessionManagement);document.getElementById('sessionNo')?.addEventListener('change',renderSessionManagement);document.getElementById('oralQuarter')?.addEventListener('change',()=>{const c=cls();if(c)c.oralPendingId=null;document.getElementById('saveOralScoreBtn')?.classList.add('hidden');document.getElementById('oralDrawResult').textContent='Aucun élève tiré pour le moment.';renderOralQuarterStatus()});
+function sessionManagementKey(){return document.getElementById('sessionDate').value+'_'+Number(document.getElementById('sessionNo').value)}
+function renderSessionManagement(){const c=cls(),root=document.getElementById('sessionLiveList');if(!c||!root)return;const key=sessionManagementKey(),labels=[['material','Matériel','Oubli'],['participation','Participation','Active'],['chatter','Bavardages','Oui'],['behavior','Comportement','À reprendre']];root.innerHTML=c.students.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(s=>{s.sessionManagement=s.sessionManagement||{};const v=s.sessionManagement[key]||{};return `<div class="session-live-row"><div class="session-live-name">${esc(s.name)}</div><div class="session-live-actions">${labels.map(([id,label,on])=>{const active=!!v[id],alert=id==='chatter'||id==='material'||id==='behavior';return `<button type="button" class="${active?(alert?'is-alert':'is-on'):''}" onclick="toggleSessionFlag('${s.id}','${id}')">${label}<br><b>${active?on:(id==='participation'?'—':'OK')}</b></button>`}).join('')}</div></div>`}).join('')||'<p class="muted">Aucun élève dans cette classe.</p>'}
+function toggleSessionFlag(studentId,flag){const s=cls()?.students.find(x=>x.id===studentId);if(!s)return;s.sessionManagement=s.sessionManagement||{};const key=sessionManagementKey();s.sessionManagement[key]=s.sessionManagement[key]||{};s.sessionManagement[key][flag]=!s.sessionManagement[key][flag];if(!Object.values(s.sessionManagement[key]).some(Boolean))delete s.sessionManagement[key][flag];save();renderSessionManagement()}
+function oralAssessmentsForQuarter(c,q){c.oralAssessments=Array.isArray(c.oralAssessments)?c.oralAssessments:[];return c.oralAssessments.filter(x=>x.quarter===q)}
+function renderOralQuarterStatus(){const c=cls(),el=document.getElementById('oralQuarterStatus'),history=document.getElementById('oralQuarterHistory'),q=document.getElementById('oralQuarter')?.value||'T1';if(!c||!el)return;const done=oralAssessmentsForQuarter(c,q);el.textContent=`${done.length} / ${c.students.length} élève(s) déjà évalué(s) à l’oral ce trimestre.`;if(history)history.innerHTML=done.length?'<div class="muted"><b>Évaluations enregistrées</b></div>'+done.slice().sort((a,b)=>a.studentName.localeCompare(b.studentName,'fr')).map(x=>`<div class="avgline"><span>${esc(x.studentName)}</span><b>${x.score}/5</b></div>`).join(''):''}
+function drawRandomOralStudent(){const c=cls();if(!c)return;const q=document.getElementById('oralQuarter').value,done=oralAssessmentsForQuarter(c,q),doneIds=new Set(done.map(x=>x.studentId)),eligible=c.students.filter(s=>!doneIds.has(s.id));if(!eligible.length){document.getElementById('oralDrawResult').textContent='Tous les élèves de cette classe ont déjà été évalués avec ce tirage pour '+q+'.';document.getElementById('saveOralScoreBtn').classList.add('hidden');c.oralPendingId=null;renderOralQuarterStatus();return}const chosen=eligible[Math.floor(Math.random()*eligible.length)];c.oralPendingId=chosen.id;save();document.getElementById('oralScore').value='';document.getElementById('oralDrawResult').innerHTML=`<div class="muted">Élève désigné :</div><div class="oral-draw-name">${esc(chosen.name)}</div><div class="muted">Il reste ${eligible.length-1} élève(s) après ce tirage.</div>`;document.getElementById('saveOralScoreBtn').classList.remove('hidden');renderOralQuarterStatus()}
+function saveOralAssessment(){const c=cls();if(!c?.oralPendingId)return alert('Tire d’abord un élève au hasard.');const q=document.getElementById('oralQuarter').value,score=document.getElementById('oralScore').value;if(score==='')return alert('Choisis une note sur 5.');const done=oralAssessmentsForQuarter(c,q);if(done.some(x=>x.studentId===c.oralPendingId)){c.oralPendingId=null;save();document.getElementById('saveOralScoreBtn').classList.add('hidden');return alert('Cet élève a déjà été évalué à l’oral ce trimestre.');}const s=c.students.find(x=>x.id===c.oralPendingId);if(!s)return alert('Élève introuvable.');c.oralAssessments.push({id:uid(),studentId:s.id,studentName:s.name,quarter:q,score:Number(score),date:new Date().toISOString().slice(0,10),createdAt:new Date().toISOString()});c.oralPendingId=null;save();document.getElementById('oralDrawResult').innerHTML=`<b>${esc(s.name)}</b> — note enregistrée : <b>${score}/5</b> (${q}).`;document.getElementById('saveOralScoreBtn').classList.add('hidden');renderOralQuarterStatus();alert('Évaluation orale enregistrée.')}
 
 const SKILL_LEVELS=[['','Non évalué'],['emerging','À renforcer'],['progressing','En cours d’acquisition'],['mastered','Maîtrisé']];
 // Référentiel disciplinaire : formulations issues des programmes officiels Eduscol/BO.
@@ -1382,29 +1418,24 @@ function classReportThemeCounts(c,q){
 function generateClassReport(){
  const c=cls();if(!c)return alert('Ouvre d’abord une classe.');
  const q=document.getElementById('classReportQuarter')?.value||document.getElementById('bulletinQuarter')?.value||'T1';
- const all=c.students||[],withAvg=all.map(s=>({s,d:quarterGradeData(s,q)})).filter(x=>x.d.avg!==null);
- const avg=withAvg.length?withAvg.reduce((n,x)=>n+x.d.avg,0)/withAvg.length:null;
  const themes=classReportThemeCounts(c,q);
- const fmt=n=>Number(n).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
- const lines=[`Bilan de la classe – ${q}`,``];
- if(avg===null)lines.push(`Aucune moyenne exploitable n’est renseignée pour ce trimestre (${all.length} élève(s) dans la classe).`);
- else{
-  lines.push(`La moyenne de classe est de ${fmt(avg)}/20, calculée à partir des moyennes disponibles pour ${withAvg.length} élève(s) sur ${all.length}.`);
-  const excellent=withAvg.filter(x=>x.d.avg>=16).length,good=withAvg.filter(x=>x.d.avg>=12&&x.d.avg<16).length,fragile=withAvg.filter(x=>x.d.avg<10).length;
-  lines.push(`Parmi les élèves évalués, ${excellent} obtiennent au moins 16/20, ${good} se situent entre 12 et 15,99/20 et ${fragile} ont une moyenne inférieure à 10/20.`);
+ const pos=themes.positive[0],neg=themes.negative[0];
+ let first='',second='';
+ if(pos&&neg){
+  first=`La classe se distingue par ${pos[0]}.`;
+  second=`Le principal point de vigilance concerne ${neg[0]}.`;
+ }else if(neg){
+  first=`Le bilan collectif met en évidence ${neg[0]}.`;
+  second=`Une implication plus régulière et une attention soutenue sont attendues.`;
+ }else if(pos){
+  first=`La classe se distingue par ${pos[0]}.`;
+  second=`Il faut poursuivre les efforts et maintenir cette dynamique.`;
+ }else{
+  first=`Les critères renseignés ne permettent pas encore de dégager une tendance collective.`;
+  second=`Les appréciations individuelles sont à compléter pour établir un bilan plus précis.`;
  }
- if(themes.positive.length)lines.push(`Les appréciations font notamment ressortir ${themes.positive[0][0]} (${themes.positive[0][1]} élève(s) concerné(s)).`);
- if(themes.negative.length)lines.push(`Le principal point de vigilance concerne ${themes.negative[0][0]} (${themes.negative[0][1]} élève(s) concerné(s)).`);
- if(!themes.positive.length&&!themes.negative.length)lines.push(`Les critères d’appréciation collectifs sont encore peu renseignés : le bilan qualitatif reste à compléter.`);
- if(avg!==null){
-  if(avg>=14)lines.push(`Dans l’ensemble, les résultats sont solides. Il convient de maintenir cette dynamique et de poursuivre le travail engagé.`);
-  else if(avg>=10)lines.push(`Les résultats sont globalement intermédiaires. La régularité du travail et l’implication de chacun permettront de consolider les acquis.`);
-  else lines.push(`Les résultats restent fragiles. Un travail plus régulier et un accompagnement ciblé seront nécessaires pour faire progresser le groupe.`);
- }
- const text=lines.join('\n');
- const area=document.getElementById('classReportText');if(area)area.value=text;
- const metrics=document.getElementById('classReportMetrics');
- if(metrics)metrics.innerHTML=`<div class="report-metrics"><div class="report-metric"><strong>${avg===null?'—':fmt(avg)+'/20'}</strong><span>Moyenne de classe</span></div><div class="report-metric"><strong>${withAvg.length}/${all.length}</strong><span>Élèves avec moyenne</span></div><div class="report-metric"><strong>${themes.positive.length+themes.negative.length}</strong><span>Tendances relevées</span></div></div>`;
+ const area=document.getElementById('classReportText');if(area)area.value=[first,second].filter(Boolean).join(' ');
+ const metrics=document.getElementById('classReportMetrics');if(metrics)metrics.innerHTML='';
 }
 async function copyClassReport(){
  const area=document.getElementById('classReportText'),value=String(area?.value||'').trim();if(!value)return alert('Génère d’abord le bilan de la classe.');
